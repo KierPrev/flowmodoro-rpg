@@ -20,7 +20,7 @@ from PyQt5.QtCore import Qt, QPropertyAnimation, QEasingCurve, QRect, QTimer, QU
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QProgressBar, QPushButton, QMessageBox, QGroupBox, QGraphicsOpacityEffect,
-    QScrollArea
+    QScrollArea, QDialog, QDialogButtonBox
 )
 # --- Matplotlib imports ---
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -290,6 +290,11 @@ class DonutChartWidget(QWidget):
             data = [1, 0]  # Pie vacío
         else:
             data = [self.focus, self.break_]
+        # --- Update chart immediately for real-time feedback ---
+        self.draw_chart(data, animate=False)
+        self.canvas.flush_events()
+        QApplication.processEvents()
+        # Animate for smooth transition
         self.animate_chart(data)
 
     def draw_chart(self, data, animate=True):
@@ -307,7 +312,9 @@ class DonutChartWidget(QWidget):
         self.ax.text(0,0, bal_text, ha="center", va="center", fontsize=16, fontweight="bold")
         self.ax.set(aspect="equal")
         self.fig.tight_layout()
-        self.canvas.draw_idle()  # <-- usar draw_idle para Qt
+        self.canvas.draw_idle()
+        self.canvas.flush_events()
+        QApplication.processEvents()
 
     def animate_chart(self, new_data):
         old_data = self._last_data
@@ -324,6 +331,25 @@ class DonutChartWidget(QWidget):
         self._ani = FuncAnimation(self.fig, update, frames=frames+1, interval=22, repeat=False)
         self._anim_ref = self._ani
         self._last_data = new_data
+
+class LevelUpDialog(QDialog):
+    def __init__(self, level, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("¡Subiste de nivel!")
+        self.setModal(True)
+        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
+        self.setAccessibleName("Nivel alcanzado")
+        self.setMinimumWidth(320)
+        layout = QVBoxLayout(self)
+        lbl = QLabel(f"🎉 ¡Felicidades!\nAlcanzaste el nivel {level}.")
+        lbl.setAlignment(Qt.AlignCenter)
+        lbl.setStyleSheet("font-size: 18pt; font-weight: bold;")
+        layout.addWidget(lbl)
+        btns = QDialogButtonBox(QDialogButtonBox.Ok)
+        btns.accepted.connect(self.accept)
+        layout.addWidget(btns)
+        self.setFocus()
+        self.setAttribute(Qt.WA_ShowWithoutActivating, False)
 
 class MainWindow(QMainWindow):
     def __init__(self, dark_mode: bool, ui_scale: float = 1.0):
@@ -703,6 +729,7 @@ class MainWindow(QMainWindow):
             self.state["story"].append(line)
             self.state["last_level"] = new_lvl
             self.save_state()
+            self.show_level_up(new_lvl)  # <-- indicador visual de subida de nivel
         self.update_counts_only()
 
     def apply_block(self, kind: str, from_auto: bool=False):
@@ -814,6 +841,9 @@ class MainWindow(QMainWindow):
         self._apply_balance_color(bal)
         # --- Actualiza el gráfico donut ---
         self.donut_chart.set_data(self.state['total_focus_sec'], self.state['total_break_sec'], bal)
+        # --- Ensure real-time update ---
+        self.donut_chart.canvas.flush_events()
+        QApplication.processEvents()
 
     def update_ui(self, initial=False):
         self.update_counts_only()
@@ -824,8 +854,36 @@ class MainWindow(QMainWindow):
             self.btn_toggle_mode.setText(f"Modo: {self.stop_mode}")
             self.btn_diff.setText(DIFF_LABEL.get(self.state.get("difficulty","normal")))
             self.update_stopwatch_label(); self.btn_start_pause.setText("Iniciar")
+            # Onboarding: mostrar solo si es la primera vez (sin EXP ni historia)
+            if self.state["exp_total"] == 0 and not self.state["story"]:
+                QTimer.singleShot(400, self.show_onboarding_tips)
         else:
             self.animate_bar(self.bar_hp, self.hp_restante()); self.animate_bar(self.bar_exp, self.exp_in_level())
+
+    def show_onboarding_tips(self):
+        tips = (
+            "<b>Bienvenido/a a Flowmodoro RPG ✨</b><br><br>"
+            "Consejos para comenzar:<ul>"
+            "<li><b>Enfoque</b>: Inicia el cronómetro y mantente concentrado.</li>"
+            "<li><b>Descanso</b>: Cambia de modo para tomar pausas saludables.</li>"
+            "<li><b>Jefe</b>: Cada sesión suma daño y experiencia para derrotar al jefe.</li>"
+            "<li><b>Gemas</b>: Gana recompensas al avanzar y úsalas en cofres.</li>"
+            "<li><b>Más…</b>: Explora estadísticas, dificultad y tu crónica de estudio.</li>"
+            "</ul><br>"
+            "¡Sube de nivel y descubre nuevas crónicas de tu progreso!"
+        )
+        dlg = QMessageBox(self)
+        dlg.setWindowTitle("Consejos iniciales")
+        dlg.setTextFormat(Qt.RichText)
+        dlg.setText(tips)
+        dlg.setStandardButtons(QMessageBox.Ok)
+        dlg.setAccessibleName("Consejos de bienvenida")
+        dlg.setModal(True)
+        dlg.exec_()
+
+    def show_level_up(self, new_lvl):
+        dlg = LevelUpDialog(new_lvl, self)
+        dlg.exec_()
 
 def main():
     # --- HiDPI (2K/4K) ---
