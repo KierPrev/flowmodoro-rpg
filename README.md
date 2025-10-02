@@ -1,6 +1,6 @@
 # ⏳ Flowmodoro RPG 🐉
 
-Por Kiernan Preve
+*Por Kiernan Preve*
 
 **Flowmodoro RPG** es una app de productividad gamificada que combina la técnica Pomodoro con elementos de un RPG.  
 La idea es simple: cada bloque de enfoque se convierte en una batalla épica contra un jefe, y tus logros diarios se traducen en progreso dentro del juego.  
