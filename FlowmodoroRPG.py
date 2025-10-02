@@ -22,6 +22,11 @@ from PyQt5.QtWidgets import (
     QProgressBar, QPushButton, QMessageBox, QGroupBox, QGraphicsOpacityEffect,
     QScrollArea
 )
+# --- Matplotlib imports ---
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+
 try:
     from PyQt5.QtMultimedia import QSoundEffect
     HAVE_QSOUND = True
@@ -30,7 +35,7 @@ except Exception:
 
 APP_NAME = "Flowmodoro RPG - Mini v12.2"
 STATE_FILENAME = "flowmodoro_rpg_mini_v12_state.json"
-SND_FILENAME = "notify_soft.wav"
+SND_FILENAME = "notify.wav"
 
 # ----- Parámetros base -----
 BASE_DANO_DEEP = 10
@@ -174,7 +179,7 @@ QLabel#bossName {
     font-family: 'Times New Roman', 'Georgia', serif;
     font-style: italic;
     font-size: 16pt;
-    color: #e5e5e5;
+    color: #334155;
 }
 """
 
@@ -261,6 +266,65 @@ def fmt_hms_signed(seconds: int) -> str:
     else:
         return f"{sign}{m:02d}:{s:02d}"
 
+class DonutChartWidget(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.fig, self.ax = plt.subplots(figsize=(2.8,2.8), subplot_kw=dict(aspect="equal"))
+        self.canvas = FigureCanvas(self.fig)
+        lay = QVBoxLayout(self); lay.setContentsMargins(0,0,0,0)
+        lay.addWidget(self.canvas)
+        self.focus = 0
+        self.break_ = 0
+        self.balance = 0
+        self._ani = None
+        self._last_data = [1,0]
+        self._anim_ref = None  # Mantener referencia
+        self.draw_chart([1,0], animate=False)
+
+    def set_data(self, focus, break_, balance):
+        self.focus = max(0, focus)
+        self.break_ = max(0, break_)
+        self.balance = balance
+        total = self.focus + self.break_
+        if total <= 0:
+            data = [1, 0]  # Pie vacío
+        else:
+            data = [self.focus, self.break_]
+        self.animate_chart(data)
+
+    def draw_chart(self, data, animate=True):
+        self.ax.clear()
+        colors = ["#10b981", "#f59e0b"]  # verde, ámbar
+        # --- Evita error NaN ---
+        safe_data = [max(0, d) for d in data]
+        if sum(safe_data) <= 0:
+            safe_data = [1, 0]
+        wedges, _ = self.ax.pie(
+            safe_data, colors=colors, startangle=90, wedgeprops={'width':0.4}, normalize=True
+        )
+        # Texto en el centro: balance
+        bal_text = f"{fmt_hms_signed(self.balance)}"
+        self.ax.text(0,0, bal_text, ha="center", va="center", fontsize=16, fontweight="bold")
+        self.ax.set(aspect="equal")
+        self.fig.tight_layout()
+        self.canvas.draw_idle()  # <-- usar draw_idle para Qt
+
+    def animate_chart(self, new_data):
+        old_data = self._last_data
+        frames = 20
+        def lerp(a,b,t): return a + (b-a)*t
+        def update(frame):
+            t = frame/frames
+            data = [lerp(old_data[0], new_data[0], t), lerp(old_data[1], new_data[1], t)]
+            self.draw_chart(data, animate=False)
+            self.canvas.flush_events()
+        # --- Fix: check event_source existence ---
+        if self._ani and getattr(self._ani, "event_source", None):
+            self._ani.event_source.stop()
+        self._ani = FuncAnimation(self.fig, update, frames=frames+1, interval=22, repeat=False)
+        self._anim_ref = self._ani
+        self._last_data = new_data
+
 class MainWindow(QMainWindow):
     def __init__(self, dark_mode: bool, ui_scale: float = 1.0):
         super().__init__()
@@ -344,8 +408,8 @@ class MainWindow(QMainWindow):
         mp.addWidget(gb_prog)
 
         # Tokens
-        gb_tokens = QGroupBox("Recompensas (tokens) 🎁"); lay_tok = QHBoxLayout(gb_tokens); lay_tok.setSpacing(8)
-        self.lbl_tokens = QLabel("Tokens: 0"); self.lbl_tokens.setObjectName("subtitle")
+        gb_tokens = QGroupBox("Recompensas (gemas) 💎"); lay_tok = QHBoxLayout(gb_tokens); lay_tok.setSpacing(8)
+        self.lbl_tokens = QLabel("Gemas: 0"); self.lbl_tokens.setObjectName("subtitle")
         self.btn_token_small = QPushButton(f"🧰 Cofre chico (−{TOKEN_COST_SMALL})"); self.btn_token_small.setObjectName("primary"); self.btn_token_small.setFixedHeight(self.px(38))
         self.btn_token_big = QPushButton(f"🏆 Cofre grande (−{TOKEN_COST_BIG})"); self.btn_token_big.setObjectName("primary"); self.btn_token_big.setFixedHeight(self.px(38))
         lay_tok.addWidget(self.lbl_tokens); lay_tok.addSpacing(8); lay_tok.addWidget(self.btn_token_small); lay_tok.addWidget(self.btn_token_big); lay_tok.addStretch(1)
@@ -358,6 +422,9 @@ class MainWindow(QMainWindow):
         self.lbl_balance = QLabel("Balance: 00:00 disponibles"); self.lbl_balance.setObjectName("muted")
         row_t.addWidget(self.lbl_totals); row_t.addSpacing(8); row_t.addWidget(self.lbl_balance); row_t.addStretch(1)
         lay_time.addLayout(row_t)
+        # --- Donut chart ---
+        self.donut_chart = DonutChartWidget(self)
+        lay_time.addWidget(self.donut_chart)
         row_diff = QHBoxLayout(); row_diff.setSpacing(8)
         self.btn_diff = QPushButton(DIFF_LABEL.get(self.state.get("difficulty","normal"))); self.btn_diff.setFixedHeight(self.px(36))
         row_diff.addWidget(QLabel("Ratio descanso:"))
@@ -540,11 +607,13 @@ class MainWindow(QMainWindow):
 
     def toggle_mode(self):
         if self.stop_mode == "Enfoque":
+            self.play_notify()  # <- agrega esta línea
             self.state["session_focus_sec"] = int(self.stop_elapsed)
             self.state["auto_registered_focus"] = self.auto_registered
             self.state["auto_last_idx_focus"] = self.auto_last_idx
         else:
             self.state["session_break_sec"] = int(self.stop_elapsed)
+            self.play_notify()
         self.save_state()
 
         self.stop_timer.stop(); self.stop_running = False
@@ -566,8 +635,10 @@ class MainWindow(QMainWindow):
     def toggle_start_pause(self):
         if self.stop_running:
             self.stop_timer.stop(); self.stop_running = False; self.btn_start_pause.setText("Iniciar")
+            self.play_notify()
         else:
             self.stop_timer.start(); self.stop_running = True; self.btn_start_pause.setText("Pausar")
+            self.play_notify()  # <- agrega esta línea
 
     def on_stopwatch_tick(self):
         self.stop_elapsed += 1
@@ -686,6 +757,7 @@ class MainWindow(QMainWindow):
         self.state["tokens_spent"] = self.state.get("tokens_spent", 0) + TOKEN_COST_SMALL
         self.save_state()
         self.update_counts_only()
+        self.play_notify()
 
     def claim_big_token(self):
         avail = self.tokens_available()
@@ -695,6 +767,7 @@ class MainWindow(QMainWindow):
         self.state["tokens_spent"] = self.state.get("tokens_spent", 0) + TOKEN_COST_BIG
         self.save_state()
         self.update_counts_only()
+        self.play_notify()
 
     # ---------- UI helpers ----------
     def toggle_more_panel(self):
@@ -728,7 +801,7 @@ class MainWindow(QMainWindow):
 
         # Tokens
         t_avail = self.tokens_available()
-        self.lbl_tokens.setText(f"Tokens: {t_avail}")
+        self.lbl_tokens.setText(f"Gemas: {t_avail}")
         self.btn_token_small.setEnabled(t_avail >= TOKEN_COST_SMALL)
         self.btn_token_big.setEnabled(t_avail >= TOKEN_COST_BIG)
 
@@ -739,6 +812,8 @@ class MainWindow(QMainWindow):
         self.lbl_balance.setText(f"Balance: {bal_text} disponibles")
         self.lbl_balance_zen.setText(f"Balance: {bal_text}")
         self._apply_balance_color(bal)
+        # --- Actualiza el gráfico donut ---
+        self.donut_chart.set_data(self.state['total_focus_sec'], self.state['total_break_sec'], bal)
 
     def update_ui(self, initial=False):
         self.update_counts_only()
