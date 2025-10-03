@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Flowmodoro RPG — Web</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <main class="container">
+    <header class="topbar">
+      <h1 class="title">Flowmodoro RPG</h1>
+      <button id="btnMore" class="btn ghost">Más…</button>
+    </header>
+
+    <section class="zen">
+      <div id="timeLabel" class="time">00:00</div>
+      <div id="balanceLabel" class="muted center">Balance: 00:00</div>
+
+      <div class="row controls">
+        <button id="btnToggleMode" class="btn primary">Modo: Enfoque</button>
+        <button id="btnStartPause" class="btn">Iniciar</button>
+        <button id="btnForget" class="btn danger">Olvidar</button>
+      </div>
+    </section>
+
+    <section class="group">
+      <div class="group-title">Jefe</div>
+      <div class="group-body">
+        <div id="bossName" class="boss-name">🐉 — …</div>
+
+        <div class="row hp-row">
+          <!-- Barra HP -->
+          <div class="progress boss" id="bossHp" role="progressbar" aria-label="HP del jefe" aria-valuemin="0"
+            aria-valuemax="100" aria-valuenow="0">
+            <div class="chunk shimmer" id="bossHpChunk"></div>
+            <canvas id="bossOverlay" class="overlay" aria-hidden="true"></canvas>
+          </div>
+          <div id="hpInfo" class="muted hp-info"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="moreArea" class="more">
+      <!-- Progreso -->
+      <section class="group">
+        <div class="group-title">Progreso ✨</div>
+        <div class="group-body">
+          <div class="row">
+            <div class="subtitle">Nivel / EXP</div>
+            <div class="progress exp" id="expBar" role="progressbar" aria-label="EXP" aria-valuemin="0"
+              aria-valuemax="100" aria-valuenow="0">
+              <div class="chunk" id="expChunk"></div>
+            </div>
+            <div id="expInfo" class="muted"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Gemas (sin título, minimalista) -->
+      <section class="group">
+        <div class="group-title sr-only">Recompensas (Gemas)</div>
+        <div class="group-body row wrap gap">
+          <div id="tokensLabel" class="subtitle">Gemas: 0</div>
+          <button id="btnTokenSmall" class="btn primary">🧰 Cofre chico (−1)</button>
+          <button id="btnTokenBig" class="btn primary">🏆 Cofre grande (−3)</button>
+        </div>
+      </section>
+
+      <!-- Acciones + dificultad inline -->
+      <section class="group">
+        <div class="group-title sr-only">Acciones</div>
+        <div class="group-body row wrap gap">
+          <button id="btnNewBoss" class="btn">Nuevo jefe 🐲</button>
+          <span class="inline-label">Dificultad:</span>
+          <button id="btnDiff" class="btn">Normal 1:3</button>
+          <div class="sep"></div>
+          <button id="btnReset" class="btn danger">Reset</button>
+        </div>
+      </section>
+
+      <!-- Crónicas -->
+      <section class="group">
+        <div class="group-title">Crónicas del estudio 📖</div>
+        <div class="group-body">
+          <div id="storyText" class="story">Tu historia se escribirá aquí al subir de nivel.</div>
+        </div>
+      </section>
+    </section>
+
+    <!-- Diálogo nivel -->
+    <dialog id="dlgLevel">
+      <div class="dialog-body">
+        <div class="dialog-title">🎉 ¡Subiste de nivel!</div>
+        <p id="dlgLevelText">Alcanzaste el nivel X.</p>
+        <div class="dialog-actions">
+          <button id="dlgLevelOk" class="btn primary">OK</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Onboarding -->
+    <dialog id="dlgTips">
+      <div class="dialog-body">
+        <div class="dialog-title">Consejos iniciales</div>
+        <ul>
+          <li><b>Enfoque</b>: Inicia el cronómetro y mantené la concentración.</li>
+          <li><b>Descanso</b>: Cambiá de modo para pausas saludables.</li>
+          <li><b>Jefe</b>: Cada sesión suma daño y EXP para derrotarlo.</li>
+          <li><b>Gemas</b>: Ganalas con EXP y úsalas en cofres.</li>
+          <li><b>Más…</b>: Progreso, dificultad y tu crónica.</li>
+        </ul>
+        <div class="dialog-actions">
+          <button id="dlgTipsOk" class="btn primary">Entendido</button>
+        </div>
+      </div>
+    </dialog>
+  </main>
+
+  <script type="module" src="app.js"></script>
+  <script type="module" src="particles.js"></script>
+</body>
+
+</html>

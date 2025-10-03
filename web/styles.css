@@ -1,0 +1,338 @@
+:root {
+  --font: 'Inter', 'Segoe UI', 'Noto Sans', 'Ubuntu', system-ui, -apple-system, sans-serif;
+  --bg: #f7f8fb;
+  --fg: #1f2430;
+  --muted: #64748b;
+  --card: #ffffff;
+  --card-border: #e2e8f0;
+  --btn: #ffffff;
+  --btn-border: #cbd5e1;
+  --btn-hover: #f1f5f9;
+  --btn-press: #e2e8f0;
+  --primary: #0ea5e9;
+  --primary-dk: #0284c7;
+  --danger-bg: #fee2e2;
+  --danger-fg: #7f1d1d;
+  --danger-bd: #fecaca;
+  --progress-bg: #e5e7eb;
+  --progress-bd: #d1d5db;
+  --exp-chunk: #10b981;
+  --hp-bg: #1e1e1e;
+  --hp-bd: #660000;
+  --hp-chunk: #b22222;
+  --ok: #10b981;
+  --warn: #f59e0b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1220;
+    --fg: #e5e7eb;
+    --muted: #94a3b8;
+    --card: #0f172a;
+    --card-border: #1f2a44;
+    --btn: #0f172a;
+    --btn-border: #334155;
+    --btn-hover: #111827;
+    --btn-press: #0b1324;
+    --primary: #1d4ed8;
+    --primary-dk: #1e40af;
+    --danger-bg: #7f1d1d;
+    --danger-fg: #fee2e2;
+    --danger-bd: #991b1b;
+    --progress-bg: #1e293b;
+    --progress-bd: #293548;
+    --exp-chunk: #0ea5e9;
+    --hp-bg: #1e1e1e;
+    --hp-bd: #660000;
+    --hp-chunk: #b22222;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--fg);
+  background: var(--bg);
+}
+
+.container {
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-size: 24px;
+  margin: 0;
+  font-weight: 800;
+  letter-spacing: .2px;
+}
+
+.center {
+  text-align: center;
+}
+
+.zen {
+  margin-top: 8px;
+}
+
+.time {
+  font-size: 35pt;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: .3px;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 13pt;
+}
+
+.subtitle {
+  font-size: 14pt;
+  font-weight: 600;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wrap {
+  flex-wrap: wrap;
+}
+
+.gap {
+  gap: 8px;
+}
+
+.controls {
+  justify-content: center;
+  margin: 10px 0;
+}
+
+.hp-row {
+  align-items: center;
+}
+
+.btn {
+  background: var(--btn);
+  border: 1px solid var(--btn-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 600;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: var(--btn-hover);
+}
+
+.btn:active {
+  background: var(--btn-press);
+}
+
+.btn.primary {
+  background: var(--primary);
+  border-color: var(--primary-dk);
+  color: #fff;
+}
+
+.btn.primary:hover {
+  background: var(--primary-dk);
+}
+
+.btn.danger {
+  background: var(--danger-bg);
+  color: var(--danger-fg);
+  border-color: var(--danger-bd);
+}
+
+.btn.danger:hover {
+  filter: brightness(0.95);
+}
+
+.btn.ghost {
+  background: transparent;
+  border-color: var(--card-border);
+}
+
+.inline-label {
+  color: var(--muted);
+  margin-left: 12px;
+}
+
+.group {
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 8px;
+  margin-top: 12px;
+  background: var(--card);
+}
+
+.group-title {
+  font-weight: 700;
+  color: #475569;
+  margin: 0 0 6px 4px;
+}
+
+.group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.boss-name {
+  font-family: 'Times New Roman', Georgia, serif;
+  font-style: italic;
+  font-size: 16pt;
+}
+
+.progress {
+  position: relative;
+  flex: 1;
+  height: 24px;
+  border: 1px solid var(--progress-bd);
+  border-radius: 10px;
+  background: var(--progress-bg);
+  overflow: hidden;
+}
+
+.progress .chunk {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  bottom: 2px;
+  width: 0%;
+  border-radius: 8px;
+  transition: width 350ms cubic-bezier(.645, .045, .355, 1);
+}
+
+.progress.exp .chunk {
+  background: var(--exp-chunk);
+}
+
+.progress.boss {
+  border-color: var(--hp-bd);
+  background: var(--hp-bg);
+}
+
+.progress.boss .chunk {
+  background: var(--hp-chunk);
+}
+
+.overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+/* Shimmer (sólo visual; partículas van en canvas) */
+.shimmer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 18%;
+  left: -20%;
+  background: linear-gradient(60deg, transparent 35%, rgba(255, 255, 255, .35) 50%, transparent 65%);
+  animation: slide 2.4s linear infinite;
+  mix-blend-mode: screen;
+  opacity: .4;
+}
+
+@keyframes slide {
+  to {
+    transform: translateX(600%);
+  }
+}
+
+.hp-info {
+  min-width: 180px;
+  text-align: right;
+}
+
+.more {
+  margin-top: 12px;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 220ms ease, opacity 220ms ease;
+}
+
+.more.open {
+  opacity: 1;
+  max-height: 960px;
+  /* suficiente para el contenido */
+}
+
+.sep {
+  flex: 1;
+}
+
+.story {
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+
+/* Dialog */
+dialog {
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 0;
+  background: var(--card);
+  color: var(--fg);
+}
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, .35);
+}
+
+.dialog-body {
+  padding: 16px;
+  max-width: 420px;
+}
+
+.dialog-title {
+  font-size: 18pt;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
