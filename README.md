@@ -1,5 +1,7 @@
 # ⏳ Flowmodoro RPG 🐉
 
+<img src="flowmodoro-rpg.png" alt="Logo" width="200"/>
+
 *Por Kiernan Preve*
 
 **Flowmodoro RPG** es una app de productividad gamificada que combina la técnica Pomodoro con elementos de un RPG.  
