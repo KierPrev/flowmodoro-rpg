@@ -18,6 +18,10 @@ La idea es simple: cada bloque de enfoque se convierte en una batalla épica con
 - 🎨 **UI adaptable**: soporte para claro/oscuro y escalado de interfaz.  
 
 ---
+## Screenshots
+
+<img width="700" alt="imagen" src="https://github.com/user-attachments/assets/ec7b8e10-fd52-436f-ba91-13847a27a367" />
+
 
 ## 🚀 Instalación
 ```bash
