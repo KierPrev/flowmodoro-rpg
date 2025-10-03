@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Flowmodoro RPG - Mini v12.2 (PyQt5)
-Cambios vs v12.1:
-- Fade in/out del panel "Más…" para transición suave.
-- Color del Balance: verde (positivo), ámbar (negativo), neutro si 0.
+Flowmodoro RPG - Mini v12.3 (PyQt5)
+Cambios vs v12.2:
+- Eliminado el panel de "Tiempos, enfoque total, descanso total, balance disponibles".
+- Eliminado el gráfico donut.
+- "Dificultad" queda en su propio cuadro.
+- Botón "Olvidar": ahora pide confirmación antes de poner tiempos en cero.
 """
 
 import os
@@ -22,7 +24,7 @@ from PyQt5.QtWidgets import (
     QProgressBar, QPushButton, QMessageBox, QGroupBox, QGraphicsOpacityEffect,
     QScrollArea, QDialog, QDialogButtonBox
 )
-# --- Matplotlib imports ---
+# --- Matplotlib imports (dejadas para compatibilidad, no se usan donut) ---
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
@@ -33,7 +35,7 @@ try:
 except Exception:
     HAVE_QSOUND = False
 
-APP_NAME = "Flowmodoro RPG - Mini v12.2"
+APP_NAME = "Flowmodoro RPG - Mini v12.3"
 STATE_FILENAME = "flowmodoro_rpg_mini_v12_state.json"
 SND_FILENAME = "notify.wav"
 
@@ -57,7 +59,7 @@ BASE_HP_MAX = 30
 HP_PER_LEVEL_MIN = 8
 HP_PER_LEVEL_MAX = 12
 
-# Dificultad -> ratio descanso permitido por enfoque (se mantiene en "Más…")
+# Dificultad -> ratio descanso permitido por enfoque
 DIFF_CYCLE = ["facil", "normal", "avanzado"]
 DIFF_LABEL = {"facil": "Fácil 1:2", "normal": "Normal 1:3", "avanzado": "Avanzado 1:4"}
 DIFF_RATIO = {"facil": 2, "normal": 3, "avanzado": 4}
@@ -173,7 +175,7 @@ QProgressBar#bossHp {
 }
 QProgressBar#bossHp::chunk {
     border-radius: 8px;
-    background-color: #b22222; /* rojo fuego tipo Elden Ring */
+    background-color: #b22222;
 }
 QLabel#bossName {
     font-family: 'Times New Roman', 'Georgia', serif;
@@ -210,7 +212,7 @@ QProgressBar#bossHp {
 }
 QProgressBar#bossHp::chunk {
     border-radius: 8px;
-    background-color: #b22222; /* rojo fuego tipo Elden Ring */
+    background-color: #b22222;
 }
 QLabel#bossName {
     font-family: 'Times New Roman', 'Georgia', serif;
@@ -266,72 +268,6 @@ def fmt_hms_signed(seconds: int) -> str:
     else:
         return f"{sign}{m:02d}:{s:02d}"
 
-class DonutChartWidget(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.fig, self.ax = plt.subplots(figsize=(2.8,2.8), subplot_kw=dict(aspect="equal"))
-        self.canvas = FigureCanvas(self.fig)
-        lay = QVBoxLayout(self); lay.setContentsMargins(0,0,0,0)
-        lay.addWidget(self.canvas)
-        self.focus = 0
-        self.break_ = 0
-        self.balance = 0
-        self._ani = None
-        self._last_data = [1,0]
-        self._anim_ref = None  # Mantener referencia
-        self.draw_chart([1,0], animate=False)
-
-    def set_data(self, focus, break_, balance):
-        self.focus = max(0, focus)
-        self.break_ = max(0, break_)
-        self.balance = balance
-        total = self.focus + self.break_
-        if total <= 0:
-            data = [1, 0]  # Pie vacío
-        else:
-            data = [self.focus, self.break_]
-        # --- Update chart immediately for real-time feedback ---
-        self.draw_chart(data, animate=False)
-        self.canvas.flush_events()
-        QApplication.processEvents()
-        # Animate for smooth transition
-        self.animate_chart(data)
-
-    def draw_chart(self, data, animate=True):
-        self.ax.clear()
-        colors = ["#10b981", "#f59e0b"]  # verde, ámbar
-        # --- Evita error NaN ---
-        safe_data = [max(0, d) for d in data]
-        if sum(safe_data) <= 0:
-            safe_data = [1, 0]
-        wedges, _ = self.ax.pie(
-            safe_data, colors=colors, startangle=90, wedgeprops={'width':0.4}, normalize=True
-        )
-        # Texto en el centro: balance
-        bal_text = f"{fmt_hms_signed(self.balance)}"
-        self.ax.text(0,0, bal_text, ha="center", va="center", fontsize=16, fontweight="bold")
-        self.ax.set(aspect="equal")
-        self.fig.tight_layout()
-        self.canvas.draw_idle()
-        self.canvas.flush_events()
-        QApplication.processEvents()
-
-    def animate_chart(self, new_data):
-        old_data = self._last_data
-        frames = 20
-        def lerp(a,b,t): return a + (b-a)*t
-        def update(frame):
-            t = frame/frames
-            data = [lerp(old_data[0], new_data[0], t), lerp(old_data[1], new_data[1], t)]
-            self.draw_chart(data, animate=False)
-            self.canvas.flush_events()
-        # --- Fix: check event_source existence ---
-        if self._ani and getattr(self._ani, "event_source", None):
-            self._ani.event_source.stop()
-        self._ani = FuncAnimation(self.fig, update, frames=frames+1, interval=22, repeat=False)
-        self._anim_ref = self._ani
-        self._last_data = new_data
-
 class LevelUpDialog(QDialog):
     def __init__(self, level, parent=None):
         super().__init__(parent)
@@ -358,7 +294,7 @@ class MainWindow(QMainWindow):
         self.ui_scale = ui_scale
         self.px = lambda v: int(round(v * self.ui_scale))
         self.setMinimumWidth(self.px(760))
-        self.dark_mode = dark_mode  # <- para futuros usos de color si querés afinar
+        self.dark_mode = dark_mode
 
         self.state_path = resource_path(STATE_FILENAME)
         self.sound_path = resource_path(SND_FILENAME)
@@ -392,7 +328,7 @@ class MainWindow(QMainWindow):
         self.lbl_time = QLabel("00:00"); self.lbl_time.setObjectName("timeLabel"); self.lbl_time.setAlignment(Qt.AlignCenter)
         root.addWidget(self.lbl_time)
 
-        # Balance en Zen
+        # Balance en Zen (se mantiene)
         self.lbl_balance_zen = QLabel("Balance: 00:00"); self.lbl_balance_zen.setObjectName("muted")
         self.lbl_balance_zen.setAlignment(Qt.AlignCenter)
         root.addWidget(self.lbl_balance_zen)
@@ -400,7 +336,7 @@ class MainWindow(QMainWindow):
         row_controls = QHBoxLayout(); row_controls.setSpacing(8)
         self.btn_toggle_mode = QPushButton("Modo: Enfoque"); self.btn_toggle_mode.setObjectName("primary"); self.btn_toggle_mode.setFixedHeight(self.px(44))
         self.btn_start_pause = QPushButton("Iniciar"); self.btn_start_pause.setFixedHeight(self.px(44))
-        # --- Nuevo botón Olvidar ---
+        # Botón Olvidar (con confirmación)
         self.btn_forget_times = QPushButton("Olvidar"); self.btn_forget_times.setObjectName("danger"); self.btn_forget_times.setFixedHeight(self.px(44))
         row_controls.addStretch(1)
         row_controls.addWidget(self.btn_toggle_mode)
@@ -447,23 +383,13 @@ class MainWindow(QMainWindow):
         lay_tok.addWidget(self.lbl_tokens); lay_tok.addSpacing(8); lay_tok.addWidget(self.btn_token_small); lay_tok.addWidget(self.btn_token_big); lay_tok.addStretch(1)
         mp.addWidget(gb_tokens)
 
-        # Tiempos & Balance & Dificultad
-        gb_time = QGroupBox("Tiempos ⏱️"); lay_time = QVBoxLayout(gb_time); lay_time.setSpacing(6)
-        row_t = QHBoxLayout(); row_t.setSpacing(8)
-        self.lbl_totals = QLabel("Enfoque total: 00:00  |  Descanso total: 00:00"); self.lbl_totals.setObjectName("muted")
-        self.lbl_balance = QLabel("Balance: 00:00 disponibles"); self.lbl_balance.setObjectName("muted")
-        row_t.addWidget(self.lbl_totals); row_t.addSpacing(8); row_t.addWidget(self.lbl_balance); row_t.addStretch(1)
-        lay_time.addLayout(row_t)
-        # --- Donut chart ---
-        self.donut_chart = DonutChartWidget(self)
-        lay_time.addWidget(self.donut_chart)
-        row_diff = QHBoxLayout(); row_diff.setSpacing(8)
+        # Dificultad (separada; sin tiempos ni donut)
+        gb_diff = QGroupBox("Dificultad ⚙️"); lay_diff = QHBoxLayout(gb_diff); lay_diff.setSpacing(8)
         self.btn_diff = QPushButton(DIFF_LABEL.get(self.state.get("difficulty","normal"))); self.btn_diff.setFixedHeight(self.px(36))
-        row_diff.addWidget(QLabel("Ratio descanso:"))
-        row_diff.addWidget(self.btn_diff)
-        row_diff.addStretch(1)
-        lay_time.addLayout(row_diff)
-        mp.addWidget(gb_time)
+        lay_diff.addWidget(QLabel("Ratio descanso:"))
+        lay_diff.addWidget(self.btn_diff)
+        lay_diff.addStretch(1)
+        mp.addWidget(gb_diff)
 
         # Rituales
         gb_more = QGroupBox("Rituales 🜲"); lay_more = QHBoxLayout(gb_more); lay_more.setSpacing(8)
@@ -494,7 +420,7 @@ class MainWindow(QMainWindow):
         # Conexiones
         self.btn_toggle_mode.clicked.connect(self.toggle_mode)
         self.btn_start_pause.clicked.connect(self.toggle_start_pause)
-        self.btn_forget_times.clicked.connect(self.forget_times)  # <-- conexión nueva
+        self.btn_forget_times.clicked.connect(self.forget_times)  # ahora con confirmación
         self.btn_more.clicked.connect(self.toggle_more_panel)
         self.btn_diff.clicked.connect(self.cycle_difficulty)
         self.btn_new_boss.clicked.connect(self.new_boss_scaled_hp)
@@ -598,7 +524,6 @@ class MainWindow(QMainWindow):
 
     # Nuevo: fade para el panel "Más…"
     def fade_more_panel(self, show: bool, duration=220):
-        # Asegurar efecto
         if self.more_area.graphicsEffect() is None:
             self.more_effect = QGraphicsOpacityEffect(self.more_area)
             self.more_area.setGraphicsEffect(self.more_effect)
@@ -608,14 +533,12 @@ class MainWindow(QMainWindow):
         anim.setEasingCurve(QEasingCurve.InOutCubic)
 
         if show:
-            # mostrar y animar 0→1
             self.more_area.setVisible(True)
             self.more_effect.setOpacity(0.0)
             anim.setStartValue(0.0)
             anim.setEndValue(1.0)
             self.btn_more.setText("Menos…")
         else:
-            # animar 1→0 y ocultar al final
             self.more_effect.setOpacity(1.0)
             anim.setStartValue(1.0)
             anim.setEndValue(0.0)
@@ -640,7 +563,7 @@ class MainWindow(QMainWindow):
 
     def toggle_mode(self):
         if self.stop_mode == "Enfoque":
-            self.play_notify()  # <- agrega esta línea
+            self.play_notify()
             self.state["session_focus_sec"] = int(self.stop_elapsed)
             self.state["auto_registered_focus"] = self.auto_registered
             self.state["auto_last_idx_focus"] = self.auto_last_idx
@@ -671,7 +594,7 @@ class MainWindow(QMainWindow):
             self.play_notify()
         else:
             self.stop_timer.start(); self.stop_running = True; self.btn_start_pause.setText("Pausar")
-            self.play_notify()  # <- agrega esta línea
+            self.play_notify()
 
     def on_stopwatch_tick(self):
         self.stop_elapsed += 1
@@ -736,7 +659,7 @@ class MainWindow(QMainWindow):
             self.state["story"].append(line)
             self.state["last_level"] = new_lvl
             self.save_state()
-            self.show_level_up(new_lvl)  # <-- indicador visual de subida de nivel
+            self.show_level_up(new_lvl)
         self.update_counts_only()
 
     def apply_block(self, kind: str, from_auto: bool=False):
@@ -806,7 +729,6 @@ class MainWindow(QMainWindow):
     # ---------- UI helpers ----------
     def toggle_more_panel(self):
         vis = self.more_area.isVisible()
-        # Animación en vez de setVisible directo
         self.fade_more_panel(show=not vis)
 
     def _apply_balance_color(self, seconds: int):
@@ -816,11 +738,9 @@ class MainWindow(QMainWindow):
         elif seconds < 0:
             color = "#f59e0b"  # amber-500
         else:
-            # "muted" similar a tema
             color = "#64748b" if not self.dark_mode else "#94a3b8"
 
-        # Aplicar a ambas labels de balance
-        self.lbl_balance.setStyleSheet(f"color: {color};")
+        # Solo la etiqueta Zen (las otras fueron removidas)
         self.lbl_balance_zen.setStyleSheet(f"color: {color};")
 
     def update_counts_only(self):
@@ -839,18 +759,11 @@ class MainWindow(QMainWindow):
         self.btn_token_small.setEnabled(t_avail >= TOKEN_COST_SMALL)
         self.btn_token_big.setEnabled(t_avail >= TOKEN_COST_BIG)
 
-        # Tiempos / Balance
-        self.lbl_totals.setText(f"Enfoque total: {fmt_hm(self.state['total_focus_sec'])}  |  Descanso total: {fmt_hm(self.state['total_break_sec'])}")
+        # Balance (solo Zen)
         bal = self.balance_seconds()
         bal_text = fmt_hms_signed(bal)
-        self.lbl_balance.setText(f"Balance: {bal_text} disponibles")
         self.lbl_balance_zen.setText(f"Balance: {bal_text}")
         self._apply_balance_color(bal)
-        # --- Actualiza el gráfico donut ---
-        self.donut_chart.set_data(self.state['total_focus_sec'], self.state['total_break_sec'], bal)
-        # --- Ensure real-time update ---
-        self.donut_chart.canvas.flush_events()
-        QApplication.processEvents()
 
     def update_ui(self, initial=False):
         self.update_counts_only()
@@ -861,7 +774,6 @@ class MainWindow(QMainWindow):
             self.btn_toggle_mode.setText(f"Modo: {self.stop_mode}")
             self.btn_diff.setText(DIFF_LABEL.get(self.state.get("difficulty","normal")))
             self.update_stopwatch_label(); self.btn_start_pause.setText("Iniciar")
-            # Onboarding: mostrar solo si es la primera vez (sin EXP ni historia)
             if self.state["exp_total"] == 0 and not self.state["story"]:
                 QTimer.singleShot(400, self.show_onboarding_tips)
         else:
@@ -875,7 +787,7 @@ class MainWindow(QMainWindow):
             "<li><b>Descanso</b>: Cambia de modo para tomar pausas saludables.</li>"
             "<li><b>Jefe</b>: Cada sesión suma daño y experiencia para derrotar al jefe.</li>"
             "<li><b>Gemas</b>: Gana recompensas al avanzar y úsalas en cofres.</li>"
-            "<li><b>Más…</b>: Explora estadísticas, dificultad y tu crónica de estudio.</li>"
+            "<li><b>Más…</b>: Explora progreso, dificultad y tu crónica de estudio.</li>"
             "</ul><br>"
             "¡Sube de nivel y descubre nuevas crónicas de tu progreso!"
         )
@@ -892,8 +804,15 @@ class MainWindow(QMainWindow):
         dlg = LevelUpDialog(new_lvl, self)
         dlg.exec_()
 
-    # ---------- Nuevo método para olvidar tiempos ----------
+    # ---------- Olvidar tiempos (con confirmación) ----------
     def forget_times(self):
+        ans = QMessageBox.question(
+            self, "Olvidar tiempos",
+            "¿Seguro que querés olvidar los tiempos actuales? Se pondrán en cero.",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+        )
+        if ans != QMessageBox.Yes:
+            return
         # Pone todos los tiempos y balance en cero, sin tocar experiencia ni recompensas
         self.state["total_focus_sec"] = 0
         self.state["total_break_sec"] = 0
@@ -932,4 +851,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
