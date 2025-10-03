@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Flowmodoro RPG - Mini v12.3 (PyQt5)
-Cambios vs v12.2:
-- Eliminado el panel de "Tiempos, enfoque total, descanso total, balance disponibles".
-- Eliminado el gráfico donut.
-- "Dificultad" queda en su propio cuadro.
-- Botón "Olvidar": ahora pide confirmación antes de poner tiempos en cero.
+Flowmodoro RPG - Mini v12.4 (PyQt5)
+Cambios vs v12.3:
+- Se movió "Dificultad (ratio descanso)" dentro del panel (antes “Rituales”)
+  a la derecha de "Nuevo jefe".
+- El QGroupBox de ese panel queda SIN título (minimalismo).
+- El QGroupBox de "Recompensas (gemas)" también queda SIN título.
+- Sin panel de tiempos ni gráfico donut (se mantienen fuera desde v12.3).
 """
 
 import os
@@ -24,7 +25,7 @@ from PyQt5.QtWidgets import (
     QProgressBar, QPushButton, QMessageBox, QGroupBox, QGraphicsOpacityEffect,
     QScrollArea, QDialog, QDialogButtonBox
 )
-# --- Matplotlib imports (dejadas para compatibilidad, no se usan donut) ---
+# Matplotlib queda importado por compatibilidad (no se usa donut)
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
@@ -35,7 +36,7 @@ try:
 except Exception:
     HAVE_QSOUND = False
 
-APP_NAME = "Flowmodoro RPG - Mini v12.3"
+APP_NAME = "Flowmodoro RPG - Mini v12.4"
 STATE_FILENAME = "flowmodoro_rpg_mini_v12_state.json"
 SND_FILENAME = "notify.wav"
 
@@ -328,7 +329,7 @@ class MainWindow(QMainWindow):
         self.lbl_time = QLabel("00:00"); self.lbl_time.setObjectName("timeLabel"); self.lbl_time.setAlignment(Qt.AlignCenter)
         root.addWidget(self.lbl_time)
 
-        # Balance en Zen (se mantiene)
+        # Balance en Zen
         self.lbl_balance_zen = QLabel("Balance: 00:00"); self.lbl_balance_zen.setObjectName("muted")
         self.lbl_balance_zen.setAlignment(Qt.AlignCenter)
         root.addWidget(self.lbl_balance_zen)
@@ -375,27 +376,30 @@ class MainWindow(QMainWindow):
         lay_prog.addLayout(exp_row)
         mp.addWidget(gb_prog)
 
-        # Tokens
-        gb_tokens = QGroupBox("Recompensas (gemas) 💎"); lay_tok = QHBoxLayout(gb_tokens); lay_tok.setSpacing(8)
+        # Recompensas (sin título)
+        gb_tokens = QGroupBox("")  # título vacío por minimalismo
+        lay_tok = QHBoxLayout(gb_tokens); lay_tok.setSpacing(8)
         self.lbl_tokens = QLabel("Gemas: 0"); self.lbl_tokens.setObjectName("subtitle")
         self.btn_token_small = QPushButton(f"🧰 Cofre chico (−{TOKEN_COST_SMALL})"); self.btn_token_small.setObjectName("primary"); self.btn_token_small.setFixedHeight(self.px(38))
         self.btn_token_big = QPushButton(f"🏆 Cofre grande (−{TOKEN_COST_BIG})"); self.btn_token_big.setObjectName("primary"); self.btn_token_big.setFixedHeight(self.px(38))
         lay_tok.addWidget(self.lbl_tokens); lay_tok.addSpacing(8); lay_tok.addWidget(self.btn_token_small); lay_tok.addWidget(self.btn_token_big); lay_tok.addStretch(1)
         mp.addWidget(gb_tokens)
 
-        # Dificultad (separada; sin tiempos ni donut)
-        gb_diff = QGroupBox("Dificultad ⚙️"); lay_diff = QHBoxLayout(gb_diff); lay_diff.setSpacing(8)
-        self.btn_diff = QPushButton(DIFF_LABEL.get(self.state.get("difficulty","normal"))); self.btn_diff.setFixedHeight(self.px(36))
-        lay_diff.addWidget(QLabel("Ratio descanso:"))
-        lay_diff.addWidget(self.btn_diff)
-        lay_diff.addStretch(1)
-        mp.addWidget(gb_diff)
-
-        # Rituales
-        gb_more = QGroupBox("Rituales 🜲"); lay_more = QHBoxLayout(gb_more); lay_more.setSpacing(8)
+        # Panel de acciones: SIN título; incluye dificultad a la derecha de "Nuevo jefe"
+        gb_more = QGroupBox("")  # título vacío
+        lay_more = QHBoxLayout(gb_more); lay_more.setSpacing(8)
         self.btn_new_boss = QPushButton("Nuevo jefe 🐲"); self.btn_new_boss.setFixedHeight(self.px(36))
+        # Dificultad dentro del mismo bloque, a la derecha
+        lbl_diff_inline = QLabel("  Dificultad:")
+        self.btn_diff = QPushButton(DIFF_LABEL.get(self.state.get("difficulty","normal"))); self.btn_diff.setFixedHeight(self.px(36))
         self.btn_reset = QPushButton("Reset"); self.btn_reset.setObjectName("danger"); self.btn_reset.setFixedHeight(self.px(36))
-        lay_more.addWidget(self.btn_new_boss); lay_more.addWidget(self.btn_reset); lay_more.addStretch(1)
+
+        lay_more.addWidget(self.btn_new_boss)
+        lay_more.addSpacing(12)
+        lay_more.addWidget(lbl_diff_inline)
+        lay_more.addWidget(self.btn_diff)
+        lay_more.addStretch(1)
+        lay_more.addWidget(self.btn_reset)
         mp.addWidget(gb_more)
 
         # Crónicas
@@ -420,7 +424,7 @@ class MainWindow(QMainWindow):
         # Conexiones
         self.btn_toggle_mode.clicked.connect(self.toggle_mode)
         self.btn_start_pause.clicked.connect(self.toggle_start_pause)
-        self.btn_forget_times.clicked.connect(self.forget_times)  # ahora con confirmación
+        self.btn_forget_times.clicked.connect(self.forget_times)  # confirmación
         self.btn_more.clicked.connect(self.toggle_more_panel)
         self.btn_diff.clicked.connect(self.cycle_difficulty)
         self.btn_new_boss.clicked.connect(self.new_boss_scaled_hp)
@@ -428,7 +432,7 @@ class MainWindow(QMainWindow):
         self.btn_token_small.clicked.connect(self.claim_small_token)
         self.btn_token_big.clicked.connect(self.claim_big_token)
 
-        self._anims = []  # mantener referencias de animaciones
+        self._anims = []
         self.update_ui(initial=True)
 
     # ---------- Estado ----------
@@ -522,7 +526,7 @@ class MainWindow(QMainWindow):
         anim.start()
         self._anims.append(anim)
 
-    # Nuevo: fade para el panel "Más…"
+    # Fade para el panel "Más…"
     def fade_more_panel(self, show: bool, duration=220):
         if self.more_area.graphicsEffect() is None:
             self.more_effect = QGraphicsOpacityEffect(self.more_area)
@@ -732,15 +736,12 @@ class MainWindow(QMainWindow):
         self.fade_more_panel(show=not vis)
 
     def _apply_balance_color(self, seconds: int):
-        # Verde para positivo, ámbar para negativo, neutro si 0
         if seconds > 0:
-            color = "#10b981"  # green-500
+            color = "#10b981"  # verde
         elif seconds < 0:
-            color = "#f59e0b"  # amber-500
+            color = "#f59e0b"  # ámbar
         else:
             color = "#64748b" if not self.dark_mode else "#94a3b8"
-
-        # Solo la etiqueta Zen (las otras fueron removidas)
         self.lbl_balance_zen.setStyleSheet(f"color: {color};")
 
     def update_counts_only(self):
@@ -759,7 +760,7 @@ class MainWindow(QMainWindow):
         self.btn_token_small.setEnabled(t_avail >= TOKEN_COST_SMALL)
         self.btn_token_big.setEnabled(t_avail >= TOKEN_COST_BIG)
 
-        # Balance (solo Zen)
+        # Balance (Zen)
         bal = self.balance_seconds()
         bal_text = fmt_hms_signed(bal)
         self.lbl_balance_zen.setText(f"Balance: {bal_text}")
@@ -828,7 +829,7 @@ class MainWindow(QMainWindow):
         self.update_counts_only()
 
 def main():
-    # --- HiDPI (2K/4K) ---
+    # HiDPI
     os.environ.setdefault('QT_ENABLE_HIGHDPI_SCALING', '1')
     os.environ.setdefault('QT_AUTO_SCREEN_SCALE_FACTOR', '1')
     os.environ.setdefault('QT_SCALE_FACTOR_ROUNDING_POLICY', 'PassThrough')
@@ -842,7 +843,7 @@ def main():
     app = QApplication(sys.argv)
     scr = app.primaryScreen()
     dpi = scr.logicalDotsPerInch() if scr else 96
-    ui_scale = max(1.0, min(2.0, dpi/96.0))  # 96→1.0, 144→1.5, 192→2.0 aprox.
+    ui_scale = max(1.0, min(2.0, dpi/96.0))
     dark = detect_dark_mode_linux()
     app.setStyleSheet(QSS_DARK if dark else QSS_LIGHT)
     win = MainWindow(dark_mode=dark, ui_scale=ui_scale)
