@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Flowmodoro RPG - Mini v12.4 (PyQt5)
-Cambios vs v12.3:
-- Se movió "Dificultad (ratio descanso)" dentro del panel (antes “Rituales”)
-  a la derecha de "Nuevo jefe".
-- El QGroupBox de ese panel queda SIN título (minimalismo).
-- El QGroupBox de "Recompensas (gemas)" también queda SIN título.
-- Sin panel de tiempos ni gráfico donut (se mantienen fuera desde v12.3).
+Flowmodoro RPG - Mini v12.5 (PyQt5)
+Cambios vs v12.4:
+- Animación continua en la barra de HP del jefe:
+  * Shimmer (resplandor que recorre la barra en loop)
+  * Chispas/partículas mínimas que se mueven y se disipan
+- Un único overlay transparente y un único QTimer para todo.
+- La animación se recorta al ancho del "chunk" (HP restante).
+- Pausa cuando la ventana no está activa o cuando HP=0.
 """
 
 import os
@@ -19,13 +20,15 @@ import struct
 import wave
 import subprocess
 
-from PyQt5.QtCore import Qt, QPropertyAnimation, QEasingCurve, QRect, QTimer, QUrl
+from PyQt5.QtCore import Qt, QPropertyAnimation, QEasingCurve, QRect, QTimer, QUrl, QPointF, QEvent
+from PyQt5.QtGui import QPainter, QLinearGradient, QColor, QBrush, QPen
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QProgressBar, QPushButton, QMessageBox, QGroupBox, QGraphicsOpacityEffect,
     QScrollArea, QDialog, QDialogButtonBox
 )
-# Matplotlib queda importado por compatibilidad (no se usa donut)
+
+# (Compatibilidad, donut no usado)
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
@@ -36,7 +39,7 @@ try:
 except Exception:
     HAVE_QSOUND = False
 
-APP_NAME = "Flowmodoro RPG - Mini v12.4"
+APP_NAME = "Flowmodoro RPG - Mini v12.5"
 STATE_FILENAME = "flowmodoro_rpg_mini_v12_state.json"
 SND_FILENAME = "notify.wav"
 
@@ -45,27 +48,23 @@ BASE_DANO_DEEP = 10
 BASE_DANO_MINI = 4
 EXP_DEEP = 10
 EXP_MINI = 4
-EXP_REWARD_TOKEN = 50         # +1 token cada 50 EXP
-TOKEN_COST_SMALL = 1          # Cofre chico
-TOKEN_COST_BIG = 3            # Cofre grande
+EXP_REWARD_TOKEN = 50
+TOKEN_COST_SMALL = 1
+TOKEN_COST_BIG = 3
 LEVEL_SIZE = 100
 
-# Escalado por nivel
 LEVEL_BONUS_DEEP = 2
 LEVEL_BONUS_MINI = 1
 
-# HP aleatorio del jefe según nivel
 BASE_HP_MIN = 10
 BASE_HP_MAX = 30
 HP_PER_LEVEL_MIN = 8
 HP_PER_LEVEL_MAX = 12
 
-# Dificultad -> ratio descanso permitido por enfoque
 DIFF_CYCLE = ["facil", "normal", "avanzado"]
 DIFF_LABEL = {"facil": "Fácil 1:2", "normal": "Normal 1:3", "avanzado": "Avanzado 1:4"}
 DIFF_RATIO = {"facil": 2, "normal": 3, "avanzado": 4}
 
-# Nombres de jefes
 BOSS_NAME_PART_A = [
     "Thala", "Eldra", "Gor", "Varyn", "Isil", "Ner", "Kael", "Mor", "Silva",
     "Auren", "Luth", "Fjor", "Arkh", "Zar", "Tarn", "Ael", "Grim", "Veld", "Myra",
@@ -288,6 +287,144 @@ class LevelUpDialog(QDialog):
         self.setFocus()
         self.setAttribute(Qt.WA_ShowWithoutActivating, False)
 
+# ---------- Overlay animado para la barra de HP ----------
+class BossHpOverlay(QWidget):
+    """Overlay que dibuja shimmer + partículas sobre el 'chunk' de la barra."""
+    def __init__(self, bar: QProgressBar, parent=None):
+        super().__init__(parent or bar)
+        self.bar = bar
+        self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        self.setAttribute(Qt.WA_NoSystemBackground, True)
+        self.setAttribute(Qt.WA_TranslucentBackground, True)
+        self.progress_value = 0
+        self.progress_max = 1
+        self.phase = 0.0  # shimmer
+        self.timer = QTimer(self)
+        self.timer.setInterval(33)  # ~30 FPS
+        self.timer.timeout.connect(self._on_tick)
+        self.particles = []  # cada partícula: dict(x, y, vy, life, alpha)
+        self._install_filters()
+        self.timer.start()
+
+    def _install_filters(self):
+        # Ajustar geometría del overlay cuando la barra cambie de tamaño o se mueva
+        self.bar.installEventFilter(self)
+        self.update_geometry()
+
+    def eventFilter(self, obj, ev):
+        if obj is self.bar and ev.type() in (QEvent.Resize, QEvent.Move, QEvent.Show, QEvent.Hide):
+            self.update_geometry()
+        return super().eventFilter(obj, ev)
+
+    def update_geometry(self):
+        # Cubrir completamente la barra (incluyendo bordes redondeados)
+        self.setGeometry(self.bar.rect())
+        self.raise_()
+        self.update()
+
+    def setProgress(self, val: int, maximum: int):
+        # Evitar 0/0
+        self.progress_max = max(1, int(maximum))
+        self.progress_value = max(0, int(val))
+        self.update()
+
+    def _on_tick(self):
+        # Pausar cuando la ventana no está activa o no hay HP
+        top = self.window()
+        active = True
+        if top is not None:
+            active = top.isActiveWindow()
+        if not active or self.progress_value <= 0:
+            self.update()  # pintar apagado
+            return
+
+        # Avanzar shimmer
+        self.phase = (self.phase + 0.015) % 1.0
+
+        # Gestionar partículas: pocas y discretas
+        self._maybe_spawn_particle()
+        self._step_particles()
+
+        self.update()
+
+    def _maybe_spawn_particle(self):
+        # Mantener 2-4 partículas vivas
+        alive = [p for p in self.particles if p["life"] > 0]
+        self.particles = alive
+        if len(self.particles) < 4 and random.random() < 0.25:
+            h = max(1, self.height() - 6)
+            # Spawn cerca de la mitad de altura
+            y = random.randint(3, h-3)
+            # Aparecen dentro del chunk (x en [4, chunk_w-6])
+            chunk_w = int(self.width() * self.progress_value / self.progress_max)
+            if chunk_w > 12:
+                x = random.randint(4, chunk_w - 6)
+                self.particles.append({
+                    "x": x,
+                    "y": y,
+                    "vy": -0.3 - random.random()*0.5,  # suben leve
+                    "life": 1.0,                      # 1.0 -> 0.0
+                    "alpha": 0.5 + random.random()*0.4,
+                    "r": 1.0 + random.random()*1.2
+                })
+
+    def _step_particles(self):
+        for p in self.particles:
+            p["y"] += p["vy"]
+            p["life"] -= 0.02
+            p["alpha"] = max(0.0, min(1.0, p["alpha"]))
+        self.particles = [p for p in self.particles if p["life"] > 0.0 and p["y"] >= 2]
+
+    def paintEvent(self, ev):
+        if self.progress_value <= 0 or self.progress_max <= 0:
+            return
+
+        w = self.width()
+        h = self.height()
+        chunk_w = int(w * self.progress_value / self.progress_max)
+
+        if chunk_w <= 2 or h <= 2:
+            return
+
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing, True)
+
+        # Clip al rect del chunk (ligero padding interior)
+        pad = 2
+        clip_rect = QRect(pad, pad, max(0, chunk_w - 2*pad), max(0, h - 2*pad))
+        p.setClipRect(clip_rect)
+
+        # -------- Shimmer (resplandor en diagonal) --------
+        # Gradiente diagonal que se mueve según 'phase'
+        # Base de colores muy sutil (no intrusivo). Ajuste por tema claro/oscuro.
+        is_dark = self.palette().color(self.backgroundRole()).value() < 128
+        c_lo = QColor(255, 255, 255, 28 if is_dark else 40)   # highlight suave
+        c_hi = QColor(255, 255, 255, 64 if is_dark else 80)   # highlight pico
+        # Mover la banda diagonal a través del ancho
+        band_w = max(20, w // 6)
+        x0 = int((self.phase) * (chunk_w + band_w*2)) - band_w
+        g = QLinearGradient(x0, 0, x0 + band_w, h)
+        g.setColorAt(0.0, QColor(0, 0, 0, 0))
+        g.setColorAt(0.45, c_lo)
+        g.setColorAt(0.5,  c_hi)
+        g.setColorAt(0.55, c_lo)
+        g.setColorAt(1.0, QColor(0, 0, 0, 0))
+        p.fillRect(clip_rect, QBrush(g))
+
+        # -------- Partículas --------
+        pen = QPen(QColor(255, 255, 255, 140 if is_dark else 170))
+        pen.setWidthF(1.0)
+        p.setPen(pen)
+        for part in self.particles:
+            alpha = int(255 * max(0.0, min(1.0, part["alpha"] * part["life"])))
+            col = QColor(255, 255, 255, alpha)
+            p.setBrush(col)
+            r = part["r"]
+            p.drawEllipse(QPointF(part["x"], part["y"]), r, r)
+
+        # (El texto lo dibuja el QProgressBar debajo; este overlay es transparente)
+        p.end()
+
 class MainWindow(QMainWindow):
     def __init__(self, dark_mode: bool, ui_scale: float = 1.0):
         super().__init__()
@@ -337,7 +474,6 @@ class MainWindow(QMainWindow):
         row_controls = QHBoxLayout(); row_controls.setSpacing(8)
         self.btn_toggle_mode = QPushButton("Modo: Enfoque"); self.btn_toggle_mode.setObjectName("primary"); self.btn_toggle_mode.setFixedHeight(self.px(44))
         self.btn_start_pause = QPushButton("Iniciar"); self.btn_start_pause.setFixedHeight(self.px(44))
-        # Botón Olvidar (con confirmación)
         self.btn_forget_times = QPushButton("Olvidar"); self.btn_forget_times.setObjectName("danger"); self.btn_forget_times.setFixedHeight(self.px(44))
         row_controls.addStretch(1)
         row_controls.addWidget(self.btn_toggle_mode)
@@ -355,6 +491,9 @@ class MainWindow(QMainWindow):
         row_hp.addWidget(self.bar_hp, 1); row_hp.addWidget(self.lbl_hp_info)
         lay_boss.addLayout(row_hp)
         root.addWidget(gb_boss)
+
+        # >>> Overlay animado encima de la barra de HP <<<
+        self.hp_overlay = BossHpOverlay(self.bar_hp, parent=self.bar_hp)
 
         # Barra inferior: Más…
         row_more = QHBoxLayout()
@@ -377,7 +516,7 @@ class MainWindow(QMainWindow):
         mp.addWidget(gb_prog)
 
         # Recompensas (sin título)
-        gb_tokens = QGroupBox("")  # título vacío por minimalismo
+        gb_tokens = QGroupBox("")
         lay_tok = QHBoxLayout(gb_tokens); lay_tok.setSpacing(8)
         self.lbl_tokens = QLabel("Gemas: 0"); self.lbl_tokens.setObjectName("subtitle")
         self.btn_token_small = QPushButton(f"🧰 Cofre chico (−{TOKEN_COST_SMALL})"); self.btn_token_small.setObjectName("primary"); self.btn_token_small.setFixedHeight(self.px(38))
@@ -385,12 +524,11 @@ class MainWindow(QMainWindow):
         lay_tok.addWidget(self.lbl_tokens); lay_tok.addSpacing(8); lay_tok.addWidget(self.btn_token_small); lay_tok.addWidget(self.btn_token_big); lay_tok.addStretch(1)
         mp.addWidget(gb_tokens)
 
-        # Panel de acciones: SIN título; incluye dificultad a la derecha de "Nuevo jefe"
-        gb_more = QGroupBox("")  # título vacío
+        # Acciones (sin título) + dificultad inline
+        gb_more = QGroupBox("")
         lay_more = QHBoxLayout(gb_more); lay_more.setSpacing(8)
         self.btn_new_boss = QPushButton("Nuevo jefe 🐲"); self.btn_new_boss.setFixedHeight(self.px(36))
-        # Dificultad dentro del mismo bloque, a la derecha
-        lbl_diff_inline = QLabel("  Dificultad:")
+        lbl_diff_inline = QLabel("   Dificultad:")
         self.btn_diff = QPushButton(DIFF_LABEL.get(self.state.get("difficulty","normal"))); self.btn_diff.setFixedHeight(self.px(36))
         self.btn_reset = QPushButton("Reset"); self.btn_reset.setObjectName("danger"); self.btn_reset.setFixedHeight(self.px(36))
 
@@ -408,13 +546,11 @@ class MainWindow(QMainWindow):
         lay_story.addWidget(self.lbl_story)
         mp.addWidget(gb_story)
 
-        # ScrollArea conteniendo el panel
         self.more_area = QScrollArea()
         self.more_area.setWidget(self.more_panel)
         self.more_area.setWidgetResizable(True)
         self.more_area.setMinimumHeight(self.px(140))
         self.more_area.setVisible(False)
-        # Efecto de opacidad para animación
         self.more_effect = QGraphicsOpacityEffect(self.more_area)
         self.more_area.setGraphicsEffect(self.more_effect)
         self.more_effect.setOpacity(0.0)
@@ -424,7 +560,7 @@ class MainWindow(QMainWindow):
         # Conexiones
         self.btn_toggle_mode.clicked.connect(self.toggle_mode)
         self.btn_start_pause.clicked.connect(self.toggle_start_pause)
-        self.btn_forget_times.clicked.connect(self.forget_times)  # confirmación
+        self.btn_forget_times.clicked.connect(self.forget_times)
         self.btn_more.clicked.connect(self.toggle_more_panel)
         self.btn_diff.clicked.connect(self.cycle_difficulty)
         self.btn_new_boss.clicked.connect(self.new_boss_scaled_hp)
@@ -480,7 +616,7 @@ class MainWindow(QMainWindow):
         ratio = DIFF_RATIO.get(self.state.get("difficulty","normal"), 3)
         allowed = int(self.state["total_focus_sec"] / ratio)
         remaining = allowed - self.state["total_break_sec"]
-        return remaining  # puede ser negativo
+        return remaining
 
     # ---------- Cálculos ----------
     def level(self):
@@ -504,7 +640,7 @@ class MainWindow(QMainWindow):
         spent = self.state.get("tokens_spent", 0)
         return max(0, generated - spent)
 
-    # ---------- Animaciones ----------
+    # ---------- Animación UI ----------
     def animate_bar(self, bar: QProgressBar, new_value: int, duration=350):
         start = bar.value()
         anim = QPropertyAnimation(bar, b"value", self)
@@ -526,16 +662,13 @@ class MainWindow(QMainWindow):
         anim.start()
         self._anims.append(anim)
 
-    # Fade para el panel "Más…"
     def fade_more_panel(self, show: bool, duration=220):
         if self.more_area.graphicsEffect() is None:
             self.more_effect = QGraphicsOpacityEffect(self.more_area)
             self.more_area.setGraphicsEffect(self.more_effect)
-
         anim = QPropertyAnimation(self.more_effect, b"opacity", self)
         anim.setDuration(duration)
         anim.setEasingCurve(QEasingCurve.InOutCubic)
-
         if show:
             self.more_area.setVisible(True)
             self.more_effect.setOpacity(0.0)
@@ -550,7 +683,6 @@ class MainWindow(QMainWindow):
                 self.more_area.setVisible(False)
                 self.btn_more.setText("Más…")
             anim.finished.connect(_hide)
-
         anim.start()
         self._anims.append(anim)
 
@@ -613,7 +745,6 @@ class MainWindow(QMainWindow):
         self.update_stopwatch_label()
         self.update_counts_only()
 
-        # Auto-registro
         if self.stop_mode == "Enfoque":
             if self.stop_elapsed >= 25*60 and self.auto_registered != "deep":
                 if self.auto_registered == "brief" and self.auto_last_idx is not None:
@@ -686,7 +817,8 @@ class MainWindow(QMainWindow):
         self.state["dano_total"] = 0
         self.state["boss_name"] = fantasy_boss_name()
         self.save_state()
-        self.bar_hp.setMaximum(self.state["hp_total"]); self.animate_bar(self.bar_hp, self.hp_restante())
+        self.bar_hp.setMaximum(self.state["hp_total"])
+        self.animate_bar(self.bar_hp, self.hp_restante())
         self.update_counts_only()
 
     def reset_all(self):
@@ -737,9 +869,9 @@ class MainWindow(QMainWindow):
 
     def _apply_balance_color(self, seconds: int):
         if seconds > 0:
-            color = "#10b981"  # verde
+            color = "#10b981"
         elif seconds < 0:
-            color = "#f59e0b"  # ámbar
+            color = "#f59e0b"
         else:
             color = "#64748b" if not self.dark_mode else "#94a3b8"
         self.lbl_balance_zen.setStyleSheet(f"color: {color};")
@@ -753,6 +885,8 @@ class MainWindow(QMainWindow):
         self.bar_hp.setMaximum(self.state["hp_total"]); self.bar_hp.setFormat("HP: %v/%m")
         self.lbl_hp_info.setText(f"Daño total: {self.state['dano_total']}  |  Total jefe: {self.state['hp_total']}")
         self.lbl_boss.setText(f"🐉 — {self.state['boss_name']}")
+        # Importante: sincronizar overlay con el valor actual
+        self.hp_overlay.setProgress(self.hp_restante(), max(1, self.state["hp_total"]))
 
         # Tokens
         t_avail = self.tokens_available()
@@ -760,7 +894,7 @@ class MainWindow(QMainWindow):
         self.btn_token_small.setEnabled(t_avail >= TOKEN_COST_SMALL)
         self.btn_token_big.setEnabled(t_avail >= TOKEN_COST_BIG)
 
-        # Balance (Zen)
+        # Balance
         bal = self.balance_seconds()
         bal_text = fmt_hms_signed(bal)
         self.lbl_balance_zen.setText(f"Balance: {bal_text}")
@@ -805,7 +939,7 @@ class MainWindow(QMainWindow):
         dlg = LevelUpDialog(new_lvl, self)
         dlg.exec_()
 
-    # ---------- Olvidar tiempos (con confirmación) ----------
+    # ---------- Olvidar tiempos ----------
     def forget_times(self):
         ans = QMessageBox.question(
             self, "Olvidar tiempos",
@@ -814,7 +948,6 @@ class MainWindow(QMainWindow):
         )
         if ans != QMessageBox.Yes:
             return
-        # Pone todos los tiempos y balance en cero, sin tocar experiencia ni recompensas
         self.state["total_focus_sec"] = 0
         self.state["total_break_sec"] = 0
         self.state["session_focus_sec"] = 0
