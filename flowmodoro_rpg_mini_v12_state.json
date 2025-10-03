@@ -1,17 +1,23 @@
 {
-  "exp_total": 0,
-  "dano_total": 0,
-  "history": [],
-  "hp_total": 33,
-  "boss_name": "Gorshade",
+  "exp_total": 10,
+  "dano_total": 10,
+  "history": [
+    {
+      "exp": 10,
+      "dano": 10,
+      "tipo": "deep"
+    }
+  ],
+  "hp_total": 36,
+  "boss_name": "Luthbane",
   "last_level": 1,
   "story": [],
-  "total_focus_sec": 64,
-  "total_break_sec": 38,
-  "session_focus_sec": 64,
-  "session_break_sec": 38,
+  "difficulty": "facil",
+  "tokens_spent": 0,
+  "total_focus_sec": 0,
+  "total_break_sec": 0,
+  "session_focus_sec": 0,
+  "session_break_sec": 0,
   "auto_registered_focus": "none",
-  "auto_last_idx_focus": null,
-  "difficulty": "normal",
-  "tokens_spent": 0
+  "auto_last_idx_focus": null
 }

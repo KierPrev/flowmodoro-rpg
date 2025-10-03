@@ -52,8 +52,8 @@ LEVEL_BONUS_DEEP = 2
 LEVEL_BONUS_MINI = 1
 
 # HP aleatorio del jefe según nivel
-BASE_HP_MIN = 20
-BASE_HP_MAX = 50
+BASE_HP_MIN = 10
+BASE_HP_MAX = 30
 HP_PER_LEVEL_MIN = 8
 HP_PER_LEVEL_MAX = 12
 
@@ -400,7 +400,13 @@ class MainWindow(QMainWindow):
         row_controls = QHBoxLayout(); row_controls.setSpacing(8)
         self.btn_toggle_mode = QPushButton("Modo: Enfoque"); self.btn_toggle_mode.setObjectName("primary"); self.btn_toggle_mode.setFixedHeight(self.px(44))
         self.btn_start_pause = QPushButton("Iniciar"); self.btn_start_pause.setFixedHeight(self.px(44))
-        row_controls.addStretch(1); row_controls.addWidget(self.btn_toggle_mode); row_controls.addWidget(self.btn_start_pause); row_controls.addStretch(1)
+        # --- Nuevo botón Olvidar ---
+        self.btn_forget_times = QPushButton("Olvidar"); self.btn_forget_times.setObjectName("danger"); self.btn_forget_times.setFixedHeight(self.px(44))
+        row_controls.addStretch(1)
+        row_controls.addWidget(self.btn_toggle_mode)
+        row_controls.addWidget(self.btn_start_pause)
+        row_controls.addWidget(self.btn_forget_times)
+        row_controls.addStretch(1)
         root.addLayout(row_controls)
 
         gb_boss = QGroupBox("Jefe"); lay_boss = QVBoxLayout(gb_boss); lay_boss.setSpacing(6)
@@ -488,6 +494,7 @@ class MainWindow(QMainWindow):
         # Conexiones
         self.btn_toggle_mode.clicked.connect(self.toggle_mode)
         self.btn_start_pause.clicked.connect(self.toggle_start_pause)
+        self.btn_forget_times.clicked.connect(self.forget_times)  # <-- conexión nueva
         self.btn_more.clicked.connect(self.toggle_more_panel)
         self.btn_diff.clicked.connect(self.cycle_difficulty)
         self.btn_new_boss.clicked.connect(self.new_boss_scaled_hp)
@@ -884,6 +891,22 @@ class MainWindow(QMainWindow):
     def show_level_up(self, new_lvl):
         dlg = LevelUpDialog(new_lvl, self)
         dlg.exec_()
+
+    # ---------- Nuevo método para olvidar tiempos ----------
+    def forget_times(self):
+        # Pone todos los tiempos y balance en cero, sin tocar experiencia ni recompensas
+        self.state["total_focus_sec"] = 0
+        self.state["total_break_sec"] = 0
+        self.state["session_focus_sec"] = 0
+        self.state["session_break_sec"] = 0
+        self.stop_elapsed = 0
+        self.auto_registered = "none"
+        self.state["auto_registered_focus"] = "none"
+        self.auto_last_idx = None
+        self.state["auto_last_idx_focus"] = None
+        self.save_state()
+        self.update_stopwatch_label()
+        self.update_counts_only()
 
 def main():
     # --- HiDPI (2K/4K) ---
