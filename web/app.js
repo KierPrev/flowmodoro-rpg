@@ -29,14 +29,14 @@ const DIFF_LABEL = { facil: 'Fácil 1:2', normal: 'Normal 1:3', avanzado: 'Avanz
 const DIFF_RATIO = { facil: 2, normal: 3, avanzado: 4 };
 
 const BOSS_A = [
-  "Thala","Eldra","Gor","Varyn","Isil","Ner","Kael","Mor","Silva","Auren","Luth",
-  "Fjor","Arkh","Zar","Tarn","Ael","Grim","Veld","Myra","Orin","Syla","Rhel",
-  "Vel","Nyra","Cor","Ilra","Fen","Bryn","Sor"
+  "Thala", "Eldra", "Gor", "Varyn", "Isil", "Ner", "Kael", "Mor", "Silva", "Auren", "Luth",
+  "Fjor", "Arkh", "Zar", "Tarn", "Ael", "Grim", "Veld", "Myra", "Orin", "Syla", "Rhel",
+  "Vel", "Nyra", "Cor", "Ilra", "Fen", "Bryn", "Sor"
 ];
 const BOSS_B = [
-  "rion","wyn","gorn","eth","drel","vash","hollow","dor","wynne","mist","thorn",
-  "dûn","mar","hael","thir","veil","brand","wraith","bane","shade","kall","moor",
-  "spear","loom","spire"
+  "rion", "wyn", "gorn", "eth", "drel", "vash", "hollow", "dor", "wynne", "mist", "thorn",
+  "dûn", "mar", "hael", "thir", "veil", "brand", "wraith", "bane", "shade", "kall", "moor",
+  "spear", "loom", "spire"
 ];
 
 const STORY_SNIPPETS = [
@@ -75,17 +75,17 @@ const $ = sel => document.querySelector(sel);
 
 function fantasyBossName() {
   return BOSS_A[Math.floor(Math.random() * BOSS_A.length)]
-       + BOSS_B[Math.floor(Math.random() * BOSS_B.length)];
+    + BOSS_B[Math.floor(Math.random() * BOSS_B.length)];
 }
 
 function fmtHMSigned(seconds) {
   const sign = seconds < 0 ? '-' : '';
-  seconds = Math.abs(seconds|0);
-  const h = (seconds/3600)|0;
-  const m = ((seconds%3600)/60)|0;
-  const s = seconds%60;
-  return h > 0 ? `${sign}${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
-               : `${sign}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  seconds = Math.abs(seconds | 0);
+  const h = (seconds / 3600) | 0;
+  const m = ((seconds % 3600) / 60) | 0;
+  const s = seconds % 60;
+  return h > 0 ? `${sign}${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+    : `${sign}${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
 function beep() {
@@ -100,7 +100,7 @@ function beep() {
     osc.connect(gain); gain.connect(ctx.destination);
     osc.start();
     setTimeout(() => { osc.stop(); ctx.close(); }, 180);
-  } catch {}
+  } catch { }
 }
 
 /* ============================
@@ -130,7 +130,7 @@ function loadState() {
     if (!raw) return seedState();
     const data = JSON.parse(raw);
     // backfill
-    for (const [k,v] of Object.entries(DEFAULT_STATE)) {
+    for (const [k, v] of Object.entries(DEFAULT_STATE)) {
       if (!(k in data)) data[k] = v;
     }
     if (!Number.isInteger(data.hp_total) || data.hp_total <= 0) data.hp_total = BASE_HP_MAX;
@@ -221,7 +221,7 @@ const dlgTipsOk = $('#dlgTipsOk');
 let state = loadState();
 
 let stopMode = 'Enfoque';
-let stopElapsed = state.session_focus_sec|0;
+let stopElapsed = state.session_focus_sec | 0;
 let stopRunning = false;
 let tickHandle = null;
 
@@ -229,8 +229,8 @@ let tickHandle = null;
 const overlay = new BossHpParticles(elBossHp, elBossHpChunk, elBossOverlay);
 
 function setTimeLabel(sec) {
-  const m = (sec/60)|0, s = sec%60;
-  elTime.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  const m = (sec / 60) | 0, s = sec % 60;
+  elTime.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 function applyBalanceColor(val) {
   let color = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim();
@@ -250,8 +250,8 @@ function updateCountsOnly() {
   elExpInfo.textContent = `Nivel ${lvl} — ${expn}/${LEVEL_SIZE}`;
 
   // HP / Jefe
-  const hpMax = state.hp_total|0;
-  const hpVal = hpRestante(state)|0;
+  const hpMax = state.hp_total | 0;
+  const hpVal = hpRestante(state) | 0;
   const hpPct = hpMax > 0 ? (hpVal / hpMax) * 100 : 0;
   elBossHpChunk.style.width = `${Math.max(0, Math.min(100, hpPct))}%`;
   overlay.setProgress(hpVal, hpMax);
@@ -275,28 +275,28 @@ function updateCountsOnly() {
   elBtnDiff.textContent = DIFF_LABEL[state.difficulty] || 'Normal 1:3';
 }
 
-function updateUI(initial=false) {
+function updateUI(initial = false) {
   updateCountsOnly();
   if (initial) {
     setTimeLabel(stopElapsed);
     if (state.exp_total === 0 && (!state.story || state.story.length === 0)) {
       // Onboarding
-      try { dlgTips.showModal(); } catch {}
+      try { dlgTips.showModal(); } catch { }
     }
   }
 }
 
-function onAfterApply(kind, upgraded=false) {
+function onAfterApply(kind, upgraded = false) {
   // Check level up
-  const prev = state.last_level|0;
+  const prev = state.last_level | 0;
   const now = level(state);
   if (now > prev) {
-    const snippet = STORY_SNIPPETS[(Math.random()*STORY_SNIPPETS.length)|0];
+    const snippet = STORY_SNIPPETS[(Math.random() * STORY_SNIPPETS.length) | 0];
     state.story.push(`Nivel ${now}: ${snippet}`);
     state.last_level = now;
     saveState(state);
     dlgLevelText.textContent = `Alcanzaste el nivel ${now}.`;
-    try { dlgLevel.showModal(); } catch {}
+    try { dlgLevel.showModal(); } catch { }
   }
   updateCountsOnly();
 }
@@ -331,11 +331,11 @@ function toggleStartPause() {
 function toggleMode() {
   // Guardar sesiones
   if (stopMode === 'Enfoque') {
-    state.session_focus_sec = stopElapsed|0;
+    state.session_focus_sec = stopElapsed | 0;
     state.auto_registered_focus = autoRegistered;
     state.auto_last_idx_focus = autoLastIdx;
   } else {
-    state.session_break_sec = stopElapsed|0;
+    state.session_break_sec = stopElapsed | 0;
   }
   saveState(state);
 
@@ -345,15 +345,20 @@ function toggleMode() {
   stopMode = (stopMode === 'Enfoque') ? 'Descanso' : 'Enfoque';
 
   if (stopMode === 'Enfoque') {
-    stopElapsed = (state.session_focus_sec|0);
+    stopElapsed = (state.session_focus_sec | 0);
     autoRegistered = state.auto_registered_focus || 'none';
     autoLastIdx = state.auto_last_idx_focus ?? null;
   } else {
-    stopElapsed = (state.session_break_sec|0);
+    stopElapsed = (state.session_break_sec | 0);
   }
 
   setTimeLabel(stopElapsed);
-  elBtnStartPause.textContent = 'Iniciar';
+
+  // Autostart timer when changing modes
+  stopRunning = true;
+  elBtnStartPause.textContent = 'Pausar';
+  tickHandle = setInterval(onTick, 1000);
+
   elBtnToggleMode.textContent = `Modo: ${stopMode}`;
   updateCountsOnly();
   beep();
@@ -366,10 +371,10 @@ let autoLastIdx = state.auto_last_idx_focus ?? null;
 function onTick() {
   stopElapsed += 1;
   if (stopMode === 'Enfoque') {
-    state.session_focus_sec = stopElapsed|0;
+    state.session_focus_sec = stopElapsed | 0;
     state.total_focus_sec += 1;
   } else {
-    state.session_break_sec = stopElapsed|0;
+    state.session_break_sec = stopElapsed | 0;
     state.total_break_sec += 1;
   }
   saveState(state);
@@ -378,7 +383,7 @@ function onTick() {
 
   if (stopMode === 'Enfoque') {
     // upgrade a deep a los 25' (si venía de brief)
-    if (stopElapsed >= 25*60 && autoRegistered !== 'deep') {
+    if (stopElapsed >= 25 * 60 && autoRegistered !== 'deep') {
       if (autoRegistered === 'brief' && autoLastIdx != null) {
         const add_exp = EXP_DEEP - EXP_MINI;
         const add_dano = scaledDamage(state, 'deep') - scaledDamage(state, 'mini');
@@ -388,7 +393,7 @@ function onTick() {
           state.history[autoLastIdx].exp = EXP_DEEP;
           state.history[autoLastIdx].dano = scaledDamage(state, 'deep');
           state.history[autoLastIdx].tipo = 'deep';
-        } catch {}
+        } catch { }
         autoRegistered = 'deep';
         state.auto_registered_focus = 'deep';
         saveState(state);
@@ -402,7 +407,7 @@ function onTick() {
         saveState(state);
         beep();
       }
-    } else if (stopElapsed >= 10*60 && autoRegistered === 'none') {
+    } else if (stopElapsed >= 10 * 60 && autoRegistered === 'none') {
       applyBlock('mini');
       autoRegistered = 'brief';
       autoLastIdx = state.history.length - 1;
@@ -459,7 +464,7 @@ elBtnNewBoss.addEventListener('click', () => {
   let min_hp = BASE_HP_MIN + (lvl - 1) * HP_PER_LEVEL_MIN;
   let max_hp = BASE_HP_MAX + (lvl - 1) * HP_PER_LEVEL_MAX;
   if (max_hp < min_hp) max_hp = min_hp + 10;
-  state.hp_total = Math.floor(min_hp + Math.random()*(max_hp - min_hp + 1));
+  state.hp_total = Math.floor(min_hp + Math.random() * (max_hp - min_hp + 1));
   state.dano_total = 0;
   state.boss_name = fantasyBossName();
   saveState(state);
@@ -469,14 +474,14 @@ elBtnNewBoss.addEventListener('click', () => {
 elBtnReset.addEventListener('click', () => {
   if (!confirm('¿Seguro que querés resetear EXP, HP, historial, gemas y tiempos?')) return;
   state = structuredClone(DEFAULT_STATE);
-  state.hp_total = Math.floor(BASE_HP_MIN + Math.random()*(BASE_HP_MAX-BASE_HP_MIN+1));
+  state.hp_total = Math.floor(BASE_HP_MIN + Math.random() * (BASE_HP_MAX - BASE_HP_MIN + 1));
   state.boss_name = fantasyBossName();
   saveState(state);
 
   clearInterval(tickHandle); tickHandle = null;
   stopRunning = false;
   stopMode = 'Enfoque';
-  stopElapsed = state.session_focus_sec|0;
+  stopElapsed = state.session_focus_sec | 0;
   autoRegistered = 'none';
   autoLastIdx = null;
   elBtnStartPause.textContent = 'Iniciar';
@@ -488,7 +493,7 @@ elBtnReset.addEventListener('click', () => {
 elBtnTokSmall.addEventListener('click', () => {
   const avail = tokensAvailable(state);
   if (avail < TOKEN_COST_SMALL) { alert('No tenés tokens suficientes.'); return; }
-  state.tokens_spent = (state.tokens_spent|0) + TOKEN_COST_SMALL;
+  state.tokens_spent = (state.tokens_spent | 0) + TOKEN_COST_SMALL;
   saveState(state);
   updateCountsOnly();
   beep();
@@ -496,7 +501,7 @@ elBtnTokSmall.addEventListener('click', () => {
 elBtnTokBig.addEventListener('click', () => {
   const avail = tokensAvailable(state);
   if (avail < TOKEN_COST_BIG) { alert('No tenés tokens suficientes.'); return; }
-  state.tokens_spent = (state.tokens_spent|0) + TOKEN_COST_BIG;
+  state.tokens_spent = (state.tokens_spent | 0) + TOKEN_COST_BIG;
   saveState(state);
   updateCountsOnly();
   beep();
@@ -525,4 +530,3 @@ updateUI(true);
 document.addEventListener('visibilitychange', () => {
   overlay.setPaused(document.hidden || hpRestante(state) <= 0);
 });
-
