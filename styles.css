@@ -176,6 +176,13 @@ body {
   border-color: var(--card-border);
 }
 
+/* Center the Más... button */
+#btnMore {
+  display: block;
+  margin: 12px auto;
+  width: fit-content;
+}
+
 .inline-label {
   color: var(--muted);
   margin-left: 12px;
