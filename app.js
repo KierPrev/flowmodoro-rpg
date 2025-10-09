@@ -179,7 +179,9 @@ function balanceSeconds(s) {
    UI refs
 ============================ */
 const elTime = $('#timeLabel');
-const elBalance = $('#balanceLabel');
+const elBalanceContainer = $('#balanceContainer');
+const elBalanceLabel = $('#balanceLabel');
+const elBalanceComponents = $('#balanceComponents');
 
 const elBtnToggleMode = $('#btnToggleMode');
 const elBtnStartPause = $('#btnStartPause');
