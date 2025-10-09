@@ -105,6 +105,50 @@ body {
   font-size: 13pt;
 }
 
+/* Balance System Redesign Styles */
+.balance-display {
+  margin: 8px 0;
+}
+
+.balance-components {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.balance-component {
+  font-size: 12pt;
+  font-weight: 500;
+}
+
+.balance-separator {
+  color: var(--muted);
+  font-weight: 300;
+}
+
+.balance-feedback {
+  text-align: center;
+  font-size: 11pt;
+  margin-top: 4px;
+  min-height: 18px;
+  font-style: italic;
+}
+
+.balance-positive {
+  color: var(--ok);
+}
+
+.balance-negative {
+  color: var(--warn);
+}
+
+.balance-neutral {
+  color: var(--muted);
+}
+
 .subtitle {
   font-size: 14pt;
   font-weight: 600;

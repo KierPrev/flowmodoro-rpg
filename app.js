@@ -175,11 +175,77 @@ function balanceSeconds(s) {
   return allowed - s.total_break_sec;
 }
 
+// New Balance System Functions
+function fmtHM(seconds) {
+  seconds = Math.abs(seconds | 0);
+  const h = (seconds / 3600) | 0;
+  const m = ((seconds % 3600) / 60) | 0;
+  return h > 0 ? `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+    : `${String(m).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+function getBalanceFeedback(balance, ratio) {
+  const balanceMinutes = Math.floor(balance / 60);
+
+  if (balance > 20 * 60) { // > +20 min
+    return {
+      message: `¡Excelente! Llevás ${balanceMinutes} minutos por encima de tu objetivo 1:${ratio}.`,
+      color: 'balance-positive',
+      buff: true
+    };
+  } else if (balance > 10 * 60) { // > +10 min
+    return {
+      message: `¡Muy bien! Llevás ${balanceMinutes} minutos por encima de tu objetivo 1:${ratio}.`,
+      color: 'balance-positive',
+      buff: false
+    };
+  } else if (balance > 0) { // > 0 min
+    return {
+      message: `¡Bien! Estás ${balanceMinutes} minutos por encima de tu objetivo 1:${ratio}.`,
+      color: 'balance-positive',
+      buff: false
+    };
+  } else if (balance === 0) { // = 0
+    return {
+      message: `Perfecto equilibrio. Mantenés tu objetivo 1:${ratio}.`,
+      color: 'balance-neutral',
+      buff: false
+    };
+  } else if (balance > -10 * 60) { // > -10 min
+    return {
+      message: `Estás ${Math.abs(balanceMinutes)} minutos por debajo de tu equilibrio 1:${ratio}. Tomá un pequeño descanso o retomá el enfoque.`,
+      color: 'balance-negative',
+      buff: false
+    };
+  } else { // <= -10 min
+    return {
+      message: `Tu Balance está negativo. Vuelve al enfoque cuando te sientas lista/o.`,
+      color: 'balance-negative',
+      buff: false
+    };
+  }
+}
+
+function getActiveBuffs(balance) {
+  const buffs = [];
+  if (balance > 20 * 60) { // > +20 min threshold
+    buffs.push({ name: 'Daño +2', description: '+2 daño por sesión' });
+    buffs.push({ name: 'XP +5%', description: '+5% experiencia' });
+  }
+  return buffs;
+}
+
 /* ============================
    UI refs
 ============================ */
 const elTime = $('#timeLabel');
-const elBalance = $('#balanceLabel');
+
+// New Balance System Elements
+const elFocusLabel = $('#focusLabel');
+const elBreakLabel = $('#breakLabel');
+const elNetoProductivoLabel = $('#netoProductivoLabel');
+const elEquilibrioLabel = $('#equilibrioLabel');
+const elBalanceFeedback = $('#balanceFeedback');
 
 const elBtnToggleMode = $('#btnToggleMode');
 const elBtnStartPause = $('#btnStartPause');
@@ -232,12 +298,7 @@ function setTimeLabel(sec) {
   const m = (sec / 60) | 0, s = sec % 60;
   elTime.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
-function applyBalanceColor(val) {
-  let color = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim();
-  if (val > 0) color = 'var(--ok)';
-  else if (val < 0) color = 'var(--warn)';
-  elBalance.style.color = color;
-}
+// Remove old balance color function since we're using the new system
 
 function updateCountsOnly() {
   // EXP / Nivel
@@ -266,10 +327,26 @@ function updateCountsOnly() {
   elBtnTokSmall.disabled = tAvail < TOKEN_COST_SMALL;
   elBtnTokBig.disabled = tAvail < TOKEN_COST_BIG;
 
-  // Balance
+  // New Balance System Display
   const bal = balanceSeconds(state);
-  elBalance.textContent = `Balance: ${fmtHMSigned(bal)}`;
-  applyBalanceColor(bal);
+  const ratio = DIFF_RATIO[state.difficulty] ?? 3;
+
+  // Update component labels
+  elFocusLabel.textContent = `Enfoque: ${fmtHM(state.total_focus_sec)}`;
+  elBreakLabel.textContent = `Descanso: ${fmtHM(state.total_break_sec)}`;
+  elNetoProductivoLabel.textContent = `Neto Productivo: ${fmtHMSigned(bal)}`;
+  elEquilibrioLabel.textContent = `Equilibrio E/D: ${fmtHMSigned(bal)}`;
+
+  // Apply visual feedback
+  const feedback = getBalanceFeedback(bal, ratio);
+  elBalanceFeedback.textContent = feedback.message;
+  elBalanceFeedback.className = `balance-feedback ${feedback.color}`;
+
+  // Apply color to Neto Productivo
+  elNetoProductivoLabel.className = `balance-component ${feedback.color}`;
+
+  // Apply color to Equilibrio
+  elEquilibrioLabel.className = `muted center ${feedback.color}`;
 
   // Dificultad label
   elBtnDiff.textContent = DIFF_LABEL[state.difficulty] || 'Normal 1:3';
@@ -453,10 +530,10 @@ elBtnDiff.addEventListener('click', () => {
   state.difficulty = next;
   saveState(state);
   updateCountsOnly();
-  // pequeño “pulse” visual
-  elBalance.style.transition = 'opacity 500ms ease';
-  elBalance.style.opacity = '0.35';
-  setTimeout(() => elBalance.style.opacity = '1', 10);
+  // pequeño "pulse" visual en el feedback
+  elBalanceFeedback.style.transition = 'opacity 500ms ease';
+  elBalanceFeedback.style.opacity = '0.35';
+  setTimeout(() => elBalanceFeedback.style.opacity = '1', 10);
 });
 
 elBtnNewBoss.addEventListener('click', () => {

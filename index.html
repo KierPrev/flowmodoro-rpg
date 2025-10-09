@@ -17,7 +17,19 @@
 
     <section class="zen">
       <div id="timeLabel" class="time">00:00</div>
-      <div id="balanceLabel" class="muted center">Balance: 00:00</div>
+
+      <!-- Balance System Redesign -->
+      <div class="balance-display">
+        <div class="balance-components">
+          <span id="focusLabel" class="balance-component">Enfoque: 00:00</span>
+          <span class="balance-separator">|</span>
+          <span id="breakLabel" class="balance-component">Descanso: 00:00</span>
+          <span class="balance-separator">|</span>
+          <span id="netoProductivoLabel" class="balance-component">Neto Productivo: 00:00</span>
+        </div>
+        <div id="equilibrioLabel" class="muted center">Equilibrio E/D: 00:00</div>
+        <div id="balanceFeedback" class="balance-feedback"></div>
+      </div>
 
       <div class="row controls">
         <button id="btnToggleMode" class="btn primary">Modo: Enfoque</button>
