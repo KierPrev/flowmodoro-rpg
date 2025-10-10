@@ -330,8 +330,7 @@ body {
 }
 
 .hp-info {
-  min-width: 180px;
-  text-align: right;
+  display: none;
 }
 
 .more {

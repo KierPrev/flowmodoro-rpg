@@ -385,11 +385,11 @@ function toggleStartPause() {
   if (stopRunning) {
     clearInterval(tickHandle); tickHandle = null;
     stopRunning = false;
-    elBtnStartPause.textContent = 'Iniciar';
+    elBtnStartPause.textContent = '▶️';
     beep();
   } else {
     stopRunning = true;
-    elBtnStartPause.textContent = 'Pausar';
+    elBtnStartPause.textContent = '⏸️';
     tickHandle = setInterval(onTick, 1000);
     beep();
   }
@@ -421,10 +421,10 @@ function toggleMode() {
 
   // Autostart timer when changing modes
   stopRunning = true;
-  elBtnStartPause.textContent = 'Pausar';
+  elBtnStartPause.textContent = '⏸️';
   tickHandle = setInterval(onTick, 1000);
 
-  elBtnToggleMode.textContent = `Modo: ${stopMode}`;
+  elBtnToggleMode.textContent = `${stopMode} 🔄`;
   updateCountsOnly();
   beep();
 }
@@ -547,8 +547,8 @@ elBtnReset.addEventListener('click', () => {
   stopElapsed = state.session_focus_sec | 0;
   autoRegistered = 'none';
   autoLastIdx = null;
-  elBtnStartPause.textContent = 'Iniciar';
-  elBtnToggleMode.textContent = `Modo: ${stopMode}`;
+  elBtnStartPause.textContent = '▶️';
+  elBtnToggleMode.textContent = `${stopMode} 🔄`;
   updateUI(true);
 });
 
@@ -576,7 +576,7 @@ dlgTipsOk.addEventListener('click', () => dlgTips.close());
 /* ============================
    Init
 ============================ */
-elBtnToggleMode.textContent = `Modo: ${stopMode}`;
+elBtnToggleMode.textContent = `${stopMode} 🔄`;
 
 if (state.story && state.story.length > 0) {
   const tail = state.story.slice(-6);
