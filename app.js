@@ -243,8 +243,7 @@ const elTime = $('#timeLabel');
 // New Balance System Elements
 const elFocusLabel = $('#focusLabel');
 const elBreakLabel = $('#breakLabel');
-const elNetoProductivoLabel = $('#netoProductivoLabel');
-const elEquilibrioLabel = $('#equilibrioLabel');
+const elRatioProductivoLabel = $('#ratioProductivoLabel');
 const elBalanceFeedback = $('#balanceFeedback');
 
 const elBtnToggleMode = $('#btnToggleMode');
@@ -308,7 +307,7 @@ function updateCountsOnly() {
   elExpChunk.style.width = `${Math.max(0, Math.min(100, expPct))}%`;
   elExpBar.setAttribute('aria-valuenow', String(expn));
   elExpBar.setAttribute('aria-valuemax', String(LEVEL_SIZE));
-  elExpInfo.textContent = `Nivel ${lvl} — ${expn}/${LEVEL_SIZE}`;
+  elExpInfo.textContent = `${expn}/${LEVEL_SIZE}`;
 
   // HP / Jefe
   const hpMax = state.hp_total | 0;
@@ -318,7 +317,7 @@ function updateCountsOnly() {
   overlay.setProgress(hpVal, hpMax);
   elBossHp.setAttribute('aria-valuenow', String(hpVal));
   elBossHp.setAttribute('aria-valuemax', String(hpMax));
-  elHpInfo.textContent = `Daño total: ${state.dano_total}  |  Total jefe: ${state.hp_total}`;
+  elHpInfo.textContent = `${hpVal}/${hpMax}`;
   elBossName.textContent = `🐉 — ${state.boss_name}`;
 
   // Tokens
@@ -334,19 +333,15 @@ function updateCountsOnly() {
   // Update component labels
   elFocusLabel.textContent = `Enfoque: ${fmtHM(state.total_focus_sec)}`;
   elBreakLabel.textContent = `Descanso: ${fmtHM(state.total_break_sec)}`;
-  elNetoProductivoLabel.textContent = `Neto Productivo: ${fmtHMSigned(bal)}`;
-  elEquilibrioLabel.textContent = `Equilibrio E/D: ${fmtHMSigned(bal)}`;
+  elRatioProductivoLabel.textContent = `Ratio Productivo: ${fmtHMSigned(bal)}`;
 
   // Apply visual feedback
   const feedback = getBalanceFeedback(bal, ratio);
   elBalanceFeedback.textContent = feedback.message;
   elBalanceFeedback.className = `balance-feedback ${feedback.color}`;
 
-  // Apply color to Neto Productivo
-  elNetoProductivoLabel.className = `balance-component ${feedback.color}`;
-
-  // Apply color to Equilibrio
-  elEquilibrioLabel.className = `muted center ${feedback.color}`;
+  // Apply color to Ratio Productivo
+  elRatioProductivoLabel.className = `balance-component ${feedback.color}`;
 
   // Dificultad label
   elBtnDiff.textContent = DIFF_LABEL[state.difficulty] || 'Normal 1:3';
