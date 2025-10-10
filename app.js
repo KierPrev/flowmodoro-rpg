@@ -238,7 +238,7 @@ function getActiveBuffs(balance) {
 /* ============================
    UI refs
 ============================ */
-const elTime = $('#timeLabel');
+// Timer removed - only balance components remain
 
 // New Balance System Elements
 const elFocusLabel = $('#focusLabel');
@@ -293,11 +293,7 @@ let tickHandle = null;
 // Partículas/overlay
 const overlay = new BossHpParticles(elBossHp, elBossHpChunk, elBossOverlay);
 
-function setTimeLabel(sec) {
-  const m = (sec / 60) | 0, s = sec % 60;
-  elTime.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-}
-// Remove old balance color function since we're using the new system
+// Timer removed - no setTimeLabel function needed anymore
 
 function updateCountsOnly() {
   // EXP / Nivel (Elden Ring style - no numbers)
@@ -350,7 +346,6 @@ function updateCountsOnly() {
 function updateUI(initial = false) {
   updateCountsOnly();
   if (initial) {
-    setTimeLabel(stopElapsed);
     if (state.exp_total === 0 && (!state.story || state.story.length === 0)) {
       // Onboarding
       try { dlgTips.showModal(); } catch { }
@@ -424,8 +419,6 @@ function toggleMode() {
     stopElapsed = (state.session_break_sec | 0);
   }
 
-  setTimeLabel(stopElapsed);
-
   // Autostart timer when changing modes
   stopRunning = true;
   elBtnStartPause.textContent = 'Pausar';
@@ -450,7 +443,6 @@ function onTick() {
     state.total_break_sec += 1;
   }
   saveState(state);
-  setTimeLabel(stopElapsed);
   updateCountsOnly();
 
   if (stopMode === 'Enfoque') {
@@ -509,7 +501,6 @@ elBtnForget.addEventListener('click', () => {
   autoLastIdx = null;
   state.auto_last_idx_focus = null;
   saveState(state);
-  setTimeLabel(stopElapsed);
   updateCountsOnly();
 });
 
@@ -558,7 +549,6 @@ elBtnReset.addEventListener('click', () => {
   autoLastIdx = null;
   elBtnStartPause.textContent = 'Iniciar';
   elBtnToggleMode.textContent = `Modo: ${stopMode}`;
-  setTimeLabel(stopElapsed);
   updateUI(true);
 });
 
@@ -587,7 +577,6 @@ dlgTipsOk.addEventListener('click', () => dlgTips.close());
    Init
 ============================ */
 elBtnToggleMode.textContent = `Modo: ${stopMode}`;
-setTimeLabel(stopElapsed);
 
 if (state.story && state.story.length > 0) {
   const tail = state.story.slice(-6);
