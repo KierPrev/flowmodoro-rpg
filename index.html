@@ -17,6 +17,39 @@
 
     <section class="zen">
       <!-- Balance System Redesign - No large timer, only balance components -->
+
+
+      <section class="group">
+        <div class="group-title">Jefe</div>
+        <div class="group-body">
+          <div id="bossName" class="boss-name">🐉 — …</div>
+
+          <div class="row hp-row">
+            <!-- Barra HP -->
+            <div class="progress boss" id="bossHp" role="progressbar" aria-label="HP del jefe" aria-valuemin="0"
+              aria-valuemax="100" aria-valuenow="0">
+              <div class="chunk shimmer" id="bossHpChunk"></div>
+              <canvas id="bossOverlay" class="overlay" aria-hidden="true"></canvas>
+            </div>
+            <div id="hpInfo" class="muted hp-info"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="group">
+        <div class="group-title">Experiencia ✨</div>
+        <div class="group-body">
+          <div class="row">
+            <div class="subtitle"></div>
+            <div class="progress exp" id="expBar" role="progressbar" aria-label="EXP" aria-valuemin="0"
+              aria-valuemax="100" aria-valuenow="0">
+              <div class="chunk" id="expChunk"></div>
+            </div>
+            <div id="expInfo" class="muted"></div>
+          </div>
+        </div>
+      </section>
+
       <div class="balance-display">
         <div class="balance-components">
           <span id="focusLabel" class="balance-component">Enfoque: 00:00</span>
@@ -31,40 +64,12 @@
 
       <div class="row controls">
         <button id="btnToggleMode" class="btn primary">Enfoque/Descanso 🔄</button>
+      </div>
+      <div class="row controls">
         <button id="btnStartPause" class="btn">▶️</button>
         <button id="btnForget" class="btn danger">❌</button>
       </div>
-    </section>
 
-    <section class="group">
-      <div class="group-title">Jefe</div>
-      <div class="group-body">
-        <div id="bossName" class="boss-name">🐉 — …</div>
-
-        <div class="row hp-row">
-          <!-- Barra HP -->
-          <div class="progress boss" id="bossHp" role="progressbar" aria-label="HP del jefe" aria-valuemin="0"
-            aria-valuemax="100" aria-valuenow="0">
-            <div class="chunk shimmer" id="bossHpChunk"></div>
-            <canvas id="bossOverlay" class="overlay" aria-hidden="true"></canvas>
-          </div>
-          <div id="hpInfo" class="muted hp-info"></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="group">
-      <div class="group-title">Experiencia ✨</div>
-      <div class="group-body">
-        <div class="row">
-          <div class="subtitle"></div>
-          <div class="progress exp" id="expBar" role="progressbar" aria-label="EXP" aria-valuemin="0"
-            aria-valuemax="100" aria-valuenow="0">
-            <div class="chunk" id="expChunk"></div>
-          </div>
-          <div id="expInfo" class="muted"></div>
-        </div>
-      </div>
     </section>
 
     <button id="btnMore" class="btn ghost">Más…</button>
