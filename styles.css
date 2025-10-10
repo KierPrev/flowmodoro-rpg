@@ -121,7 +121,68 @@ body {
 
 .balance-component {
   font-size: 16pt;
-  font-weight: 500;
+  font-weight: 600;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Popover styles */
+.popover-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--muted);
+  color: var(--bg);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: help;
+  transition: all 0.2s ease;
+  margin-left: 4px;
+}
+
+.popover-trigger:hover {
+  background: var(--primary);
+  transform: scale(1.1);
+}
+
+.popover {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  z-index: 1000;
+  min-width: 200px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.balance-component:hover .popover {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(12px);
+}
+
+.popover-content {
+  color: var(--fg);
+}
+
+.popover-content strong {
+  color: var(--primary);
+  font-weight: 600;
 }
 
 .balance-separator {
@@ -373,7 +434,29 @@ body {
 }
 
 .hp-info {
-  display: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.exp-info {
+  font-size: 11px;
+  font-weight: 600;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  pointer-events: none;
 }
 
 .more {

@@ -121,7 +121,8 @@ const DEFAULT_STATE = {
   auto_registered_focus: "none", // none | brief | deep
   auto_last_idx_focus: null,
   difficulty: "normal",
-  tokens_spent: 0
+  tokens_spent: 0,
+  has_seen_tips: false
 };
 
 function loadState() {
@@ -296,16 +297,16 @@ const overlay = new BossHpParticles(elBossHp, elBossHpChunk, elBossOverlay);
 // Timer removed - no setTimeLabel function needed anymore
 
 function updateCountsOnly() {
-  // EXP / Nivel (Elden Ring style - no numbers)
+  // EXP / Nivel - Show percentage inside bar
   const lvl = level(state);
   const expn = expInLevel(state);
   const expPct = (expn / LEVEL_SIZE) * 100;
   elExpChunk.style.width = `${Math.max(0, Math.min(100, expPct))}%`;
   elExpBar.setAttribute('aria-valuenow', String(expn));
   elExpBar.setAttribute('aria-valuemax', String(LEVEL_SIZE));
-  elExpInfo.textContent = ''; // Remove numbers for Elden Ring style
+  elExpInfo.textContent = `${Math.round(expPct)}%`; // Show percentage
 
-  // HP / Jefe (Elden Ring style - no numbers)
+  // HP / Jefe - Show percentage inside bar with proper contrast
   const hpMax = state.hp_total | 0;
   const hpVal = hpRestante(state) | 0;
   const hpPct = hpMax > 0 ? (hpVal / hpMax) * 100 : 0;
@@ -313,7 +314,7 @@ function updateCountsOnly() {
   overlay.setProgress(hpVal, hpMax);
   elBossHp.setAttribute('aria-valuenow', String(hpVal));
   elBossHp.setAttribute('aria-valuemax', String(hpMax));
-  elHpInfo.textContent = ''; // Remove numbers for Elden Ring style
+  elHpInfo.textContent = `${Math.round(hpPct)}%`; // Show percentage
   elBossName.textContent = `🐉 — ${state.boss_name}`;
 
   // Tokens
@@ -329,7 +330,16 @@ function updateCountsOnly() {
   // Update component labels
   elFocusLabel.textContent = `Enfoque: ${fmtHM(state.total_focus_sec)}`;
   elBreakLabel.textContent = `Descanso: ${fmtHM(state.total_break_sec)}`;
-  elRatioProductivoLabel.textContent = `Ratio Productivo: ${fmtHMSigned(bal)}`;
+
+  // Update Neto label with time value
+  const netoTime = fmtHMSigned(bal);
+  // Keep the popover trigger and update only the time part
+  const timeSpan = elRatioProductivoLabel.querySelector('.neto-time');
+  if (timeSpan) {
+    timeSpan.textContent = netoTime;
+  } else {
+    elRatioProductivoLabel.innerHTML = `<span class="popover-trigger">?</span> Neto: <span class="neto-time">${netoTime}</span>`;
+  }
 
   // Apply visual feedback
   const feedback = getBalanceFeedback(bal, ratio);
@@ -346,8 +356,8 @@ function updateCountsOnly() {
 function updateUI(initial = false) {
   updateCountsOnly();
   if (initial) {
-    if (state.exp_total === 0 && (!state.story || state.story.length === 0)) {
-      // Onboarding
+    if (!state.has_seen_tips) {
+      // Show tips only once
       try { dlgTips.showModal(); } catch { }
     }
   }
@@ -571,7 +581,11 @@ elBtnTokBig.addEventListener('click', () => {
 
 // Dialogs
 dlgLevelOk.addEventListener('click', () => dlgLevel.close());
-dlgTipsOk.addEventListener('click', () => dlgTips.close());
+dlgTipsOk.addEventListener('click', () => {
+  state.has_seen_tips = true;
+  saveState(state);
+  dlgTips.close();
+});
 
 /* ============================
    Init
@@ -584,6 +598,18 @@ if (state.story && state.story.length > 0) {
 } else {
   elStory.textContent = 'Tu historia se escribirá aquí al subir de nivel.';
 }
+
+// Add popover to Neto label
+const popoverHTML = `
+  <div class="popover">
+    <div class="popover-content">
+      <strong>Cómo se calcula:</strong><br>
+      Neto = Tiempo de enfoque / ratio - Tiempo de descanso<br>
+      Ejemplo: 60 min enfoque / 3 - 15 min descanso = 5 min neto
+    </div>
+  </div>
+`;
+elRatioProductivoLabel.insertAdjacentHTML('beforeend', popoverHTML);
 
 updateUI(true);
 
