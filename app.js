@@ -300,16 +300,16 @@ function setTimeLabel(sec) {
 // Remove old balance color function since we're using the new system
 
 function updateCountsOnly() {
-  // EXP / Nivel
+  // EXP / Nivel (Elden Ring style - no numbers)
   const lvl = level(state);
   const expn = expInLevel(state);
   const expPct = (expn / LEVEL_SIZE) * 100;
   elExpChunk.style.width = `${Math.max(0, Math.min(100, expPct))}%`;
   elExpBar.setAttribute('aria-valuenow', String(expn));
   elExpBar.setAttribute('aria-valuemax', String(LEVEL_SIZE));
-  elExpInfo.textContent = `${expn}/${LEVEL_SIZE}`;
+  elExpInfo.textContent = ''; // Remove numbers for Elden Ring style
 
-  // HP / Jefe
+  // HP / Jefe (Elden Ring style - no numbers)
   const hpMax = state.hp_total | 0;
   const hpVal = hpRestante(state) | 0;
   const hpPct = hpMax > 0 ? (hpVal / hpMax) * 100 : 0;
@@ -317,7 +317,7 @@ function updateCountsOnly() {
   overlay.setProgress(hpVal, hpMax);
   elBossHp.setAttribute('aria-valuenow', String(hpVal));
   elBossHp.setAttribute('aria-valuemax', String(hpMax));
-  elHpInfo.textContent = `${hpVal}/${hpMax}`;
+  elHpInfo.textContent = ''; // Remove numbers for Elden Ring style
   elBossName.textContent = `🐉 — ${state.boss_name}`;
 
   // Tokens
