@@ -47,6 +47,11 @@
     --hp-bd: #660000;
     --hp-chunk: #b22222;
   }
+
+  .group {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
 }
 
 * {
@@ -62,7 +67,12 @@ body {
   margin: 0;
   font-family: var(--font);
   color: var(--fg);
-  background: var(--bg);
+  background:
+    radial-gradient(circle at 20% 80%, rgba(14, 165, 233, 0.4) 0%, transparent 60%),
+    radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.3) 0%, transparent 60%),
+    linear-gradient(135deg, var(--bg) 0%, var(--card) 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
 }
 
 .container {
@@ -341,7 +351,10 @@ body {
   border-radius: 10px;
   padding: 8px;
   margin-top: 12px;
-  background: var(--card);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .group-title {
