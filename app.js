@@ -103,6 +103,67 @@ function beep() {
   } catch { }
 }
 
+function playNotificationSound() {
+  // Reproducir el archivo de sonido notify.wav
+  try {
+    const audio = new Audio('notify.wav');
+    audio.play().catch(e => {
+      console.warn('No se pudo reproducir el sonido de notificación:', e);
+      // Fallback al beep si el archivo de sonido falla
+      beep();
+    });
+  } catch (e) {
+    console.warn('Error al reproducir sonido de notificación:', e);
+    beep();
+  }
+}
+
+function showSystemNotification(title, message) {
+  // Notificación del sistema (si está disponible)
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification(title, {
+      body: message,
+      icon: 'flowmodoro-rpg.png'
+    });
+  } else if ('Notification' in window && Notification.permission === 'default') {
+    // Solicitar permiso si no se ha hecho antes
+    Notification.requestPermission().then(permission => {
+      if (permission === 'granted') {
+        new Notification(title, {
+          body: message,
+          icon: 'flowmodoro-rpg.png'
+        });
+      }
+    });
+  }
+
+  // Notificación visual en la página como fallback
+  const notification = document.createElement('div');
+  notification.className = 'break-notification';
+  notification.innerHTML = `
+    <div class="notification-content">
+      <h3>${title}</h3>
+      <p>${message}</p>
+    </div>
+  `;
+  document.body.appendChild(notification);
+
+  // Animación de entrada
+  setTimeout(() => {
+    notification.classList.add('show');
+  }, 10);
+
+  // Remover después de 5 segundos
+  setTimeout(() => {
+    notification.classList.remove('show');
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }, 300);
+  }, 5000);
+}
+
 /* ============================
    Estado
 ============================ */
@@ -454,6 +515,21 @@ function onTick() {
   }
   saveState(state);
   updateCountsOnly();
+
+  // Detectar cuando el tiempo de descanso llega a cero
+  if (stopMode === 'Descanso') {
+    const balance = balanceSeconds(state);
+    if (balance >= 0 && balance <= 5) { // Cuando el balance está entre 0 y 5 segundos
+      // Solo activar la notificación una vez cuando cruza a positivo
+      if (balance === 0) {
+        playNotificationSound();
+        showSystemNotification(
+          '¡Descanso completado! 🎉',
+          'Tu tiempo de descanso ha llegado a cero. ¡Es hora de volver al enfoque!'
+        );
+      }
+    }
+  }
 
   if (stopMode === 'Enfoque') {
     // upgrade a deep a los 25' (si venía de brief)
