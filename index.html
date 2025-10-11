@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Flowmodoro RPG — Web</title>
   <link rel="icon" type="image/png" href="flowmodoro-rpg.png" />
   <link rel="stylesheet" href="styles.css" />
@@ -19,7 +19,7 @@
       <!-- Balance System Redesign - No large timer, only balance components -->
 
 
-      <section class="group">
+      <section class="group boss-group">
         <div class="group-title">Jefe</div>
         <div class="group-body">
           <div id="bossName" class="boss-name">🐉 — …</div>
@@ -62,12 +62,25 @@
         <div id="balanceFeedback" class="balance-feedback"></div>
       </div>
 
+      <!-- Indicador de progreso de sesión -->
+      <div class="session-progress">
+        <div class="session-progress-bar">
+          <div id="sessionProgressFill" class="session-progress-fill"></div>
+        </div>
+        <div id="sessionProgressText" class="session-progress-text">Sesión actual: 00:00</div>
+      </div>
+
       <div class="row controls">
-        <button id="btnToggleMode" class="btn primary">Enfoque/Descanso 🔄</button>
+        <button id="btnToggleMode" class="btn primary" title="Enter: Cambiar entre Enfoque y Descanso"
+          aria-label="Cambiar modo entre Enfoque y Descanso (Enter)">Enfoque/Descanso 🔄</button>
+        <button id="btnZenMode" class="btn" title="Z: Activar modo Zen para enfoque"
+          aria-label="Activar modo Zen (Z)">Modo Zen 🧘</button>
       </div>
       <div class="row controls">
-        <button id="btnStartPause" class="btn">▶️</button>
-        <button id="btnForget" class="btn danger">❌</button>
+        <button id="btnStartPause" class="btn" title="Espacio: Iniciar o pausar el cronómetro"
+          aria-label="Iniciar o pausar cronómetro (Espacio)">▶️</button>
+        <button id="btnForget" class="btn danger" title="Reiniciar tiempos actuales"
+          aria-label="Reiniciar tiempos actuales">❌</button>
       </div>
 
     </section>
@@ -75,11 +88,74 @@
     <button id="btnMore" class="btn ghost">Más…</button>
 
     <section id="moreArea" class="more">
-      <!-- Progreso -->
+      <!-- Estadísticas -->
+      <section class="group">
+        <div class="group-title">📊 Estadísticas</div>
+        <div class="group-body">
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-label">Sesiones hoy</div>
+              <div class="stat-value" id="statsSessionsToday">0</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Tiempo promedio</div>
+              <div class="stat-value" id="statsAvgSession">00:00</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Mejor racha</div>
+              <div class="stat-value" id="statsBestStreak">0</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Tiempo semanal</div>
+              <div class="stat-value" id="statsWeeklyTime">00:00</div>
+            </div>
+          </div>
+        </div>
+      </section>
 
+      <!-- Configuración de sonido -->
+      <section class="group">
+        <div class="group-title">🔊 Configuración de Sonido</div>
+        <div class="group-body">
+          <div class="sound-settings">
+            <label class="sound-toggle">
+              <input type="checkbox" id="soundMaster" checked>
+              <span class="toggle-slider"></span>
+              <span class="toggle-label">Sonido general</span>
+            </label>
+            <label class="sound-toggle">
+              <input type="checkbox" id="soundNotifications" checked>
+              <span class="toggle-slider"></span>
+              <span class="toggle-label">Notificaciones</span>
+            </label>
+            <label class="sound-toggle">
+              <input type="checkbox" id="soundButtons" checked>
+              <span class="toggle-slider"></span>
+              <span class="toggle-label">Botones</span>
+            </label>
+          </div>
+          <div class="theme-settings">
+            <label class="sound-toggle">
+              <input type="checkbox" id="autoDarkMode" checked>
+              <span class="toggle-slider"></span>
+              <span class="toggle-label">Modo oscuro automático (8 PM - 6 AM)</span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- Logros -->
+      <section class="group">
+        <div class="group-title">🏆 Logros</div>
+        <div class="group-body">
+          <div id="achievementsList" class="achievements-list">
+            <!-- Los logros se cargarán dinámicamente -->
+          </div>
+        </div>
+      </section>
 
       <!-- Gemas (sin título, minimalista) -->
-      <section class="group">
+      <section class="group tokens-group">
         <div class="group-title sr-only">Recompensas (Gemas)</div>
         <div class="group-body row wrap gap">
           <div id="tokensLabel" class="subtitle">Gemas: 0</div>
@@ -101,7 +177,7 @@
       </section>
 
       <!-- Crónicas -->
-      <section class="group">
+      <section class="group story-group">
         <div class="group-title">Crónicas del estudio 📖</div>
         <div class="group-body">
           <div id="storyText" class="story">Tu historia se escribirá aquí al subir de nivel.</div>
