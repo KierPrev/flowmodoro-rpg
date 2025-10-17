@@ -272,37 +272,37 @@ function getBalanceFeedback(balance, ratio) {
 
   if (balance > 20 * 60) { // > +20 min
     return {
-      message: `¡Excelente! Llevás ${balanceMinutes} minutos por encima de tu objetivo 1:${ratio}.`,
+      message: `+${balanceMinutes} min`,
       color: 'balance-positive',
       buff: true
     };
   } else if (balance > 10 * 60) { // > +10 min
     return {
-      message: `¡Muy bien! Llevás ${balanceMinutes} minutos por encima de tu objetivo 1:${ratio}.`,
+      message: `+${balanceMinutes} min`,
       color: 'balance-positive',
       buff: false
     };
   } else if (balance > 0) { // > 0 min
     return {
-      message: `¡Bien! Estás ${balanceMinutes} minutos por encima de tu objetivo 1:${ratio}.`,
+      message: `+${balanceMinutes} min`,
       color: 'balance-positive',
       buff: false
     };
   } else if (balance === 0) { // = 0
     return {
-      message: `Perfecto equilibrio. Mantenés tu objetivo 1:${ratio}.`,
+      message: `Equilibrio`,
       color: 'balance-neutral',
       buff: false
     };
   } else if (balance > -10 * 60) { // > -10 min
     return {
-      message: `Estás ${Math.abs(balanceMinutes)} minutos por debajo de tu equilibrio 1:${ratio}. Tomá un pequeño descanso o retomá el enfoque.`,
+      message: `${balanceMinutes} min`,
       color: 'balance-negative',
       buff: false
     };
   } else { // <= -10 min
     return {
-      message: `Tu Balance está negativo. Vuelve al enfoque cuando te sientas lista/o.`,
+      message: `${balanceMinutes} min`,
       color: 'balance-negative',
       buff: false
     };
@@ -579,7 +579,6 @@ const elStatsWeeklyTime = $('#statsWeeklyTime');
 
 // Indicador de progreso de sesión
 const elSessionProgressFill = $('#sessionProgressFill');
-const elSessionProgressText = $('#sessionProgressText');
 
 // Configuración de sonido
 const elSoundMaster = $('#soundMaster');
@@ -676,14 +675,63 @@ function updateCountsOnly() {
 
 function updateSessionProgress() {
   const sessionTime = stopMode === 'Enfoque' ? state.session_focus_sec : state.session_break_sec;
-  const targetTime = stopMode === 'Enfoque' ? (autoRegistered === 'deep' ? 25 * 60 : 10 * 60) : 5 * 60; // 5 min descanso típico
 
-  const progress = Math.min(100, (sessionTime / targetTime) * 100);
-  elSessionProgressFill.style.width = `${progress}%`;
+  if (stopMode === 'Enfoque') {
+    // Update single progress bar with phase transitions for focus mode
+    updateFocusPhase(sessionTime);
+  } else {
+    // For break mode, use simple progress
+    const targetTime = 5 * 60; // 5 min descanso típico
+    const progress = Math.min(100, (sessionTime / targetTime) * 100);
 
-  const sessionTimeFmt = fmtHM(sessionTime);
-  const targetTimeFmt = fmtHM(targetTime);
-  elSessionProgressText.textContent = `${stopMode}: ${sessionTimeFmt} / ${targetTimeFmt}`;
+    // Reset progress bar for break mode
+    resetProgressBar();
+  }
+}
+
+function updateFocusPhase(sessionTime) {
+  const phases = [
+    { startTime: 0, endTime: 10, className: 'phase-1' },        // 0-10 segundos (Green)
+    { startTime: 10, endTime: 10 * 60, className: 'phase-2' },  // 10s-10min (Blue)
+    { startTime: 10 * 60, endTime: 20 * 60, className: 'phase-3' } // 10min-20min (Purple)
+  ];
+
+  // Determine current phase
+  let currentPhase = null;
+  let progress = 0;
+
+  for (const phase of phases) {
+    if (sessionTime >= phase.startTime && sessionTime <= phase.endTime) {
+      currentPhase = phase;
+      const phaseDuration = phase.endTime - phase.startTime;
+      progress = Math.min(100, ((sessionTime - phase.startTime) / phaseDuration) * 100);
+      break;
+    }
+  }
+
+  // If session time exceeds all phases, show full progress
+  if (!currentPhase && sessionTime > phases[phases.length - 1].endTime) {
+    currentPhase = phases[phases.length - 1];
+    progress = 100;
+  }
+
+  // Update progress bar
+  if (currentPhase) {
+    // Remove all phase classes
+    elSessionProgressFill.classList.remove('phase-1', 'phase-2', 'phase-3');
+    // Add current phase class
+    elSessionProgressFill.classList.add(currentPhase.className);
+    // Update progress width
+    elSessionProgressFill.style.width = `${progress}%`;
+  } else {
+    // Reset if no phase (shouldn't happen, but safety)
+    resetProgressBar();
+  }
+}
+
+function resetProgressBar() {
+  elSessionProgressFill.classList.remove('phase-1', 'phase-2', 'phase-3');
+  elSessionProgressFill.style.width = '0%';
 }
 
 function updateUI(initial = false) {

@@ -208,7 +208,7 @@ body {
   font-style: italic;
 }
 
-/* Indicador de progreso de sesión */
+/* Indicador de progreso de sesión con fases múltiples */
 .session-progress {
   margin: 8px 0;
   display: flex;
@@ -226,10 +226,39 @@ body {
 
 .session-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--primary), var(--primary-dk));
   width: 0%;
-  transition: width 0.3s ease;
+  transition: width 0.3s ease, background 0.3s ease;
   border-radius: 2px;
+}
+
+/* Phase 1: 0-10 seconds (Green) */
+.session-progress-fill.phase-1 {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+/* Phase 2: 10s-10min (Blue) */
+.session-progress-fill.phase-2 {
+  background: linear-gradient(90deg, #0ea5e9, #0284c7);
+}
+
+/* Phase 3: 10min-20min (Purple) */
+.session-progress-fill.phase-3 {
+  background: linear-gradient(90deg, #8b5cf6, #7c3aed);
+}
+
+/* Dark mode adjustments for phase colors */
+@media (prefers-color-scheme: dark) {
+  .session-progress-fill.phase-1 {
+    background: linear-gradient(90deg, #34d399, #10b981);
+  }
+
+  .session-progress-fill.phase-2 {
+    background: linear-gradient(90deg, #38bdf8, #0ea5e9);
+  }
+
+  .session-progress-fill.phase-3 {
+    background: linear-gradient(90deg, #a78bfa, #8b5cf6);
+  }
 }
 
 .session-progress-text {
@@ -543,6 +572,7 @@ body {
   font-family: 'Times New Roman', Georgia, serif;
   font-style: italic;
   font-size: 16pt;
+  color: var(--fg);
 }
 
 .progress {
