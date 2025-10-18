@@ -1298,6 +1298,7 @@ function cancelAlarm() {
 
 // Event listeners for alarm
 elBtnAlarm.addEventListener('click', (e) => {
+  e.preventDefault();
   e.stopPropagation();
   if (elAlarmPopover.classList.contains('show')) {
     hideAlarmPopover();
@@ -1328,6 +1329,17 @@ document.addEventListener('click', (e) => {
     hideAlarmPopover();
   }
 });
+
+// Touch event support for mobile
+elBtnAlarm.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  if (elAlarmPopover.classList.contains('show')) {
+    hideAlarmPopover();
+  } else {
+    showAlarmPopover();
+  }
+}, { passive: false });
 
 // Initialize alarm slider
 elAlarmSlider.value = state.alarm_minutes || 5;
