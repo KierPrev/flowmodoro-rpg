@@ -204,7 +204,11 @@ const DEFAULT_STATE = {
   current_streak: 0,
   last_session_date: null,
   // Logros
-  achievements: [] // Array de IDs de logros desbloqueados
+  achievements: [], // Array de IDs de logros desbloqueados
+  // Alarma
+  alarm_enabled: false,
+  alarm_minutes: 5,
+  alarm_start_time: null
 };
 
 function loadState() {
@@ -591,6 +595,15 @@ const elAutoDarkMode = $('#autoDarkMode');
 
 // Logros
 const elAchievementsList = $('#achievementsList');
+
+// Alarma
+const elBtnAlarm = $('#btnAlarm');
+const elAlarmPopover = $('#alarmPopover');
+const elAlarmSlider = $('#alarmSlider');
+const elAlarmValue = $('#alarmValue');
+const elAlarmSet = $('#alarmSet');
+const elAlarmCancel = $('#alarmCancel');
+const elAlarmPresets = document.querySelectorAll('.alarm-preset');
 
 const dlgLevel = $('#dlgLevel');
 const dlgLevelText = $('#dlgLevelText');
@@ -1214,3 +1227,108 @@ elBreakLabel.addEventListener('click', activateBreakTimer);
 // Add cursor pointer style to indicate clickability
 elFocusLabel.style.cursor = 'pointer';
 elBreakLabel.style.cursor = 'pointer';
+
+/* ============================
+    Alarm Functionality
+=========================== */
+let alarmTimeout = null;
+
+function showAlarmPopover() {
+  elAlarmPopover.classList.add('show');
+  // Update slider value display
+  updateAlarmValue();
+}
+
+function hideAlarmPopover() {
+  elAlarmPopover.classList.remove('show');
+}
+
+function updateAlarmValue() {
+  const minutes = elAlarmSlider.value;
+  elAlarmValue.textContent = `${minutes} min`;
+}
+
+function setAlarm(minutes) {
+  state.alarm_enabled = true;
+  state.alarm_minutes = minutes;
+  state.alarm_start_time = Date.now();
+  saveState(state);
+
+  // Clear any existing alarm
+  if (alarmTimeout) {
+    clearTimeout(alarmTimeout);
+  }
+
+  // Set new alarm
+  alarmTimeout = setTimeout(() => {
+    triggerAlarm();
+  }, minutes * 60 * 1000);
+
+  hideAlarmPopover();
+  beep();
+}
+
+function triggerAlarm() {
+  state.alarm_enabled = false;
+  state.alarm_start_time = null;
+  saveState(state);
+
+  showSystemNotification(
+    '⏰ ¡Alarma!',
+    `Han pasado ${state.alarm_minutes} minutos. ¡Es hora de una pausa!`
+  );
+
+  playNotificationSound();
+  alarmTimeout = null;
+}
+
+function cancelAlarm() {
+  state.alarm_enabled = false;
+  state.alarm_start_time = null;
+  saveState(state);
+
+  if (alarmTimeout) {
+    clearTimeout(alarmTimeout);
+    alarmTimeout = null;
+  }
+
+  hideAlarmPopover();
+  beep();
+}
+
+// Event listeners for alarm
+elBtnAlarm.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (elAlarmPopover.classList.contains('show')) {
+    hideAlarmPopover();
+  } else {
+    showAlarmPopover();
+  }
+});
+
+elAlarmSlider.addEventListener('input', updateAlarmValue);
+
+elAlarmPresets.forEach(preset => {
+  preset.addEventListener('click', () => {
+    const minutes = parseInt(preset.dataset.minutes);
+    setAlarm(minutes);
+  });
+});
+
+elAlarmSet.addEventListener('click', () => {
+  const minutes = parseInt(elAlarmSlider.value);
+  setAlarm(minutes);
+});
+
+elAlarmCancel.addEventListener('click', cancelAlarm);
+
+// Close popover when clicking outside
+document.addEventListener('click', (e) => {
+  if (!elAlarmPopover.contains(e.target) && e.target !== elBtnAlarm) {
+    hideAlarmPopover();
+  }
+});
+
+// Initialize alarm slider
+elAlarmSlider.value = state.alarm_minutes || 5;
+updateAlarmValue();

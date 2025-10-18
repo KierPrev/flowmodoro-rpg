@@ -118,6 +118,7 @@
  /* Balance System Redesign Styles */
  .balance-display {
    margin: 8px 0;
+   position: relative;
  }
 
  .balance-components {
@@ -130,7 +131,7 @@
  }
 
  .balance-component {
-   font-size: 18pt;
+   font-size: 24pt;
    font-weight: 600;
    position: relative;
    display: inline-flex;
@@ -215,11 +216,7 @@
  }
 
  .balance-feedback {
-   text-align: center;
-   font-size: 11pt;
-   margin-top: 4px;
-   min-height: 18px;
-   font-style: italic;
+   display: none;
  }
 
  /* Indicador de progreso de sesión con fases múltiples */
@@ -231,9 +228,9 @@
  }
 
  .session-progress-bar {
-   height: 6px;
+   height: 10px;
    background: var(--progress-bg);
-   border-radius: 3px;
+   border-radius: 5px;
    overflow: hidden;
    border: 1px solid var(--progress-bd);
  }
@@ -313,9 +310,9 @@
    gap: 8px;
  }
 
- .controls {
+ .balance-display .controls {
    justify-content: center;
-   margin: 10px 0;
+   margin: 10px 0 0 0;
    gap: 12px;
  }
 
@@ -503,6 +500,13 @@
    display: flex;
    align-items: center;
    justify-content: center;
+ }
+
+ #btnForget,
+ #btnAlarm {
+   font-size: 24px;
+   padding: 16px 24px;
+   min-height: 56px;
  }
 
  .btn:hover {
@@ -1223,6 +1227,131 @@
    font-weight: 600;
  }
 
+ /* Alarm Popover Styles */
+ .alarm-popover {
+   position: absolute;
+   top: 100%;
+   left: 50%;
+   transform: translateX(-50%) translateY(8px);
+   background: var(--card);
+   border: 1px solid var(--card-border);
+   border-radius: 12px;
+   padding: 16px;
+   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+   opacity: 0;
+   visibility: hidden;
+   transition: all 0.2s ease;
+   z-index: 1000;
+   min-width: 280px;
+   backdrop-filter: blur(16px);
+   -webkit-backdrop-filter: blur(16px);
+ }
+
+ .alarm-popover.show {
+   opacity: 1;
+   visibility: visible;
+   transform: translateX(-50%) translateY(12px);
+ }
+
+ .alarm-title {
+   font-size: 16px;
+   font-weight: 600;
+   margin-bottom: 12px;
+   text-align: center;
+   color: var(--fg);
+ }
+
+ .alarm-options {
+   display: flex;
+   gap: 8px;
+   margin-bottom: 12px;
+   justify-content: center;
+ }
+
+ .alarm-preset {
+   padding: 8px 12px;
+   border: 1px solid var(--card-border);
+   border-radius: 8px;
+   background: var(--btn);
+   color: var(--fg);
+   cursor: pointer;
+   font-size: 14px;
+   font-weight: 500;
+   transition: all 0.2s ease;
+ }
+
+ .alarm-preset:hover {
+   background: var(--btn-hover);
+ }
+
+ .alarm-preset.active {
+   background: var(--primary);
+   border-color: var(--primary-dk);
+   color: white;
+ }
+
+ .alarm-custom {
+   display: flex;
+   flex-direction: column;
+   gap: 8px;
+   margin-bottom: 16px;
+ }
+
+ .alarm-custom label {
+   font-size: 14px;
+   font-weight: 500;
+   color: var(--fg);
+ }
+
+ #alarmSlider {
+   width: 100%;
+   height: 6px;
+   border-radius: 3px;
+   background: var(--progress-bg);
+   outline: none;
+   -webkit-appearance: none;
+   appearance: none;
+ }
+
+ #alarmSlider::-webkit-slider-thumb {
+   -webkit-appearance: none;
+   appearance: none;
+   width: 20px;
+   height: 20px;
+   border-radius: 50%;
+   background: var(--primary);
+   cursor: pointer;
+   border: 2px solid var(--primary-dk);
+ }
+
+ #alarmSlider::-moz-range-thumb {
+   width: 20px;
+   height: 20px;
+   border-radius: 50%;
+   background: var(--primary);
+   cursor: pointer;
+   border: 2px solid var(--primary-dk);
+ }
+
+ #alarmValue {
+   font-size: 14px;
+   font-weight: 600;
+   color: var(--primary);
+   text-align: center;
+ }
+
+ .alarm-actions {
+   display: flex;
+   gap: 8px;
+   justify-content: center;
+ }
+
+ .alarm-actions .btn {
+   flex: 1;
+   padding: 10px 16px;
+   font-size: 14px;
+ }
+
  @media (max-width: 480px) {
    .confirmation-content {
      padding: 20px;
@@ -1234,6 +1363,18 @@
    }
 
    .confirmation-actions .btn {
+     width: 100%;
+   }
+
+   .alarm-popover {
+     min-width: 250px;
+   }
+
+   .alarm-options {
+     flex-direction: column;
+   }
+
+   .alarm-preset {
      width: 100%;
    }
  }

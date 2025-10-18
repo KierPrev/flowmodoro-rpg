@@ -61,6 +61,32 @@
           <span id="ratioProductivoLabel" class="balance-component">Neto: 00:00</span>
         </div>
         <div id="balanceFeedback" class="balance-feedback"></div>
+        <div class="row controls">
+          <button id="btnForget" class="btn danger" title="🏁 Rendirse: Terminar sesión y reiniciar tiempos"
+            aria-label="Rendirse y reiniciar tiempos">🏁</button>
+          <button id="btnAlarm" class="btn" title="⏰ Configurar alarma" aria-label="Configurar alarma">⏰</button>
+        </div>
+
+        <!-- Alarm Popover -->
+        <div id="alarmPopover" class="alarm-popover">
+          <div class="alarm-popover-content">
+            <div class="alarm-title">⏰ Configurar Alarma</div>
+            <div class="alarm-options">
+              <button class="alarm-preset" data-minutes="5">5 min</button>
+              <button class="alarm-preset" data-minutes="10">10 min</button>
+              <button class="alarm-preset" data-minutes="25">25 min</button>
+            </div>
+            <div class="alarm-custom">
+              <label for="alarmSlider">Personalizado:</label>
+              <input type="range" id="alarmSlider" min="1" max="60" value="5" step="1">
+              <span id="alarmValue">5 min</span>
+            </div>
+            <div class="alarm-actions">
+              <button id="alarmSet" class="btn primary">Establecer</button>
+              <button id="alarmCancel" class="btn">Cancelar</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Indicador de progreso de sesión con fases múltiples -->
@@ -68,11 +94,6 @@
         <div class="session-progress-bar">
           <div id="sessionProgressFill" class="session-progress-fill"></div>
         </div>
-      </div>
-
-      <div class="row controls">
-        <button id="btnForget" class="btn danger" title="🏁 Rendirse: Terminar sesión y reiniciar tiempos"
-          aria-label="Rendirse y reiniciar tiempos">🏁</button>
       </div>
 
     </section>
@@ -212,6 +233,7 @@
         </div>
       </div>
     </dialog>
+
   </main>
 
   <script type="module" src="app.js"></script>
