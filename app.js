@@ -556,6 +556,9 @@ const elHpInfo = $('#hpInfo');
 
 const elMore = $('#moreArea');
 const elBtnMore = $('#btnMore');
+const elBtnSettings = $('#btnSettings');
+const elDlgSettings = $('#dlgSettings');
+const elDlgSettingsOk = $('#dlgSettingsOk');
 
 const elExpBar = $('#expBar');
 const elExpChunk = $('#expChunk');
@@ -983,6 +986,7 @@ elBtnMore.addEventListener('click', () => {
   elBtnMore.textContent = open ? 'Menos…' : 'Más…';
 });
 
+
 elBtnDiff.addEventListener('click', () => {
   const cur = state.difficulty || 'normal';
   const idx = DIFF_CYCLE.indexOf(cur);
@@ -1150,6 +1154,22 @@ document.addEventListener('keydown', (e) => {
       // Cerrar cualquier diálogo abierto
       const dialogs = document.querySelectorAll('dialog[open]');
       dialogs.forEach(dialog => dialog.close());
+      // Cerrar popover de configuración
+      if (settingsPopoverOpen) {
+        settingsPopoverOpen = false;
+        elSettingsPopover.classList.remove('show');
+      }
       break;
   }
+});
+
+/* ============================
+   Settings Dialog Functionality
+============================ */
+elBtnSettings.addEventListener('click', () => {
+  try { elDlgSettings.showModal(); } catch { }
+});
+
+elDlgSettingsOk.addEventListener('click', () => {
+  elDlgSettings.close();
 });

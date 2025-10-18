@@ -13,6 +13,7 @@
   <main class="container">
     <header class="topbar">
       <h1 class="title">Flowmodoro RPG</h1>
+      <button id="btnSettings" class="btn ghost" title="Configuración" aria-label="Configuración">⚙️</button>
     </header>
 
     <section class="zen">
@@ -86,6 +87,7 @@
 
     <button id="btnMore" class="btn ghost">Más…</button>
 
+
     <section id="moreArea" class="more">
       <!-- Estadísticas -->
       <section class="group">
@@ -108,37 +110,6 @@
               <div class="stat-label">Tiempo semanal</div>
               <div class="stat-value" id="statsWeeklyTime">00:00</div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Configuración de sonido -->
-      <section class="group">
-        <div class="group-title">🔊 Configuración de Sonido</div>
-        <div class="group-body">
-          <div class="sound-settings">
-            <label class="sound-toggle">
-              <input type="checkbox" id="soundMaster" checked>
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">Sonido general</span>
-            </label>
-            <label class="sound-toggle">
-              <input type="checkbox" id="soundNotifications" checked>
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">Notificaciones</span>
-            </label>
-            <label class="sound-toggle">
-              <input type="checkbox" id="soundButtons" checked>
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">Botones</span>
-            </label>
-          </div>
-          <div class="theme-settings">
-            <label class="sound-toggle">
-              <input type="checkbox" id="autoDarkMode" checked>
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">Modo oscuro automático (8 PM - 6 AM)</span>
-            </label>
           </div>
         </div>
       </section>
@@ -208,6 +179,40 @@
         </ul>
         <div class="dialog-actions">
           <button id="dlgTipsOk" class="btn primary">Entendido</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Settings Dialog -->
+    <dialog id="dlgSettings">
+      <div class="dialog-body">
+        <div class="dialog-title">⚙️ Configuración</div>
+        <div class="sound-settings">
+          <label class="sound-toggle">
+            <input type="checkbox" id="soundMaster" checked>
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">Sonido general</span>
+          </label>
+          <label class="sound-toggle">
+            <input type="checkbox" id="soundNotifications" checked>
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">Notificaciones</span>
+          </label>
+          <label class="sound-toggle">
+            <input type="checkbox" id="soundButtons" checked>
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">Botones</span>
+          </label>
+        </div>
+        <div class="theme-settings">
+          <label class="sound-toggle">
+            <input type="checkbox" id="autoDarkMode" checked>
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">Modo oscuro automático (8 PM - 6 AM)</span>
+          </label>
+        </div>
+        <div class="dialog-actions">
+          <button id="dlgSettingsOk" class="btn primary">Cerrar</button>
         </div>
       </div>
     </dialog>
