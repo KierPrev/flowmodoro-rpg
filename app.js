@@ -543,9 +543,7 @@ const elBreakLabel = $('#breakLabel');
 const elRatioProductivoLabel = $('#ratioProductivoLabel');
 const elBalanceFeedback = $('#balanceFeedback');
 
-const elBtnToggleMode = $('#btnToggleMode');
 const elBtnZenMode = $('#btnZenMode');
-const elBtnStartPause = $('#btnStartPause');
 const elBtnForget = $('#btnForget');
 
 const elBossName = $('#bossName');
@@ -650,6 +648,10 @@ function updateCountsOnly() {
   // Update component labels
   elFocusLabel.textContent = `Enfoque: ${fmtHM(state.total_focus_sec)}`;
   elBreakLabel.textContent = `Descanso: ${fmtHM(state.total_break_sec)}`;
+
+  // Update active state for balance labels
+  elFocusLabel.classList.toggle('active', stopMode === 'Enfoque' && stopRunning);
+  elBreakLabel.classList.toggle('active', stopMode === 'Descanso' && stopRunning);
 
   // Update Neto label with time value
   const netoTime = fmtHMSigned(bal);
@@ -783,16 +785,18 @@ function applyBlock(kind) {
   onAfterApply(kind, false);
 }
 
-function toggleStartPause() {
+function startTimer() {
+  if (!stopRunning) {
+    stopRunning = true;
+    tickHandle = setInterval(onTick, 1000);
+    beep();
+  }
+}
+
+function stopTimer() {
   if (stopRunning) {
     clearInterval(tickHandle); tickHandle = null;
     stopRunning = false;
-    elBtnStartPause.textContent = '▶️';
-    beep();
-  } else {
-    stopRunning = true;
-    elBtnStartPause.textContent = '⏸️';
-    tickHandle = setInterval(onTick, 1000);
     beep();
   }
 }
@@ -823,10 +827,8 @@ function toggleMode() {
 
   // Autostart timer when changing modes
   stopRunning = true;
-  elBtnStartPause.textContent = '⏸️';
   tickHandle = setInterval(onTick, 1000);
 
-  elBtnToggleMode.textContent = `${stopMode} 🔄`;
   updateCountsOnly();
   beep();
 }
@@ -903,8 +905,6 @@ function onTick() {
 /* ============================
    Acciones / botones
 ============================ */
-elBtnStartPause.addEventListener('click', toggleStartPause);
-elBtnToggleMode.addEventListener('click', toggleMode);
 
 function toggleZenMode() {
   state.zen_mode = !state.zen_mode;
@@ -966,6 +966,7 @@ elBtnForget.addEventListener('click', async () => {
   const confirmed = await showConfirmationDialog(
     '¿Seguro que querés olvidar los tiempos actuales? Se pondrán en cero.',
     () => {
+      stopTimer();
       state.total_focus_sec = 0;
       state.total_break_sec = 0;
       state.session_focus_sec = 0;
@@ -1027,8 +1028,6 @@ elBtnReset.addEventListener('click', async () => {
       stopElapsed = state.session_focus_sec | 0;
       autoRegistered = 'none';
       autoLastIdx = null;
-      elBtnStartPause.textContent = '▶️';
-      elBtnToggleMode.textContent = `${stopMode} 🔄`;
       updateUI(true);
       updateStats();
       updateAchievementsDisplay();
@@ -1099,7 +1098,6 @@ dlgTipsOk.addEventListener('click', () => {
 /* ============================
    Init
 ============================ */
-elBtnToggleMode.textContent = `${stopMode} 🔄`;
 
 if (state.story && state.story.length > 0) {
   const tail = state.story.slice(-6);
@@ -1112,9 +1110,15 @@ if (state.story && state.story.length > 0) {
 const popoverHTML = `
   <div class="popover">
     <div class="popover-content">
-      <strong>Cómo se calcula:</strong><br>
-      Neto = Tiempo de enfoque / ratio - Tiempo de descanso<br>
-      Ejemplo: 60 min enfoque / 3 - 15 min descanso = 5 min neto
+      <strong>¿Qué es el tiempo neto?</strong><br><br>
+      Es el tiempo que te queda para descansar después de trabajar.<br><br>
+      <strong>Fórmula simple:</strong><br>
+      Tiempo neto = (Tiempo de trabajo ÷ 3) - Tiempo de descanso<br><br>
+      <strong>Ejemplo fácil:</strong><br>
+      Si trabajas 60 minutos, puedes descansar 20 minutos (60 ÷ 3 = 20)<br>
+      Si ya descansaste 15 minutos, te quedan 5 minutos netos (20 - 15 = 5)<br><br>
+      <strong>¿Para qué sirve?</strong><br>
+      Te ayuda a mantener un equilibrio saludable entre trabajo y descanso.
     </div>
   </div>
 `;
@@ -1136,10 +1140,6 @@ document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
   switch (e.key) {
-    case ' ': // Space - Play/Pause
-      e.preventDefault();
-      toggleStartPause();
-      break;
     case 'Enter': // Enter - Toggle modo Enfoque/Descanso
       e.preventDefault();
       toggleMode();
@@ -1173,3 +1173,44 @@ elBtnSettings.addEventListener('click', () => {
 elDlgSettingsOk.addEventListener('click', () => {
   elDlgSettings.close();
 });
+
+/* ============================
+   Clickable Balance Labels
+============================ */
+function activateFocusTimer() {
+  // If already in focus mode and timer running, do nothing
+  if (stopMode === 'Enfoque' && stopRunning) return;
+
+  // If in break mode, switch to focus mode
+  if (stopMode === 'Descanso') {
+    toggleMode();
+  } else {
+    // If in focus mode but timer not running, start it
+    if (!stopRunning) {
+      startTimer();
+    }
+  }
+}
+
+function activateBreakTimer() {
+  // If already in break mode and timer running, do nothing
+  if (stopMode === 'Descanso' && stopRunning) return;
+
+  // If in focus mode, switch to break mode
+  if (stopMode === 'Enfoque') {
+    toggleMode();
+  } else {
+    // If in break mode but timer not running, start it
+    if (!stopRunning) {
+      startTimer();
+    }
+  }
+}
+
+// Add click event listeners to balance labels
+elFocusLabel.addEventListener('click', activateFocusTimer);
+elBreakLabel.addEventListener('click', activateBreakTimer);
+
+// Add cursor pointer style to indicate clickability
+elFocusLabel.style.cursor = 'pointer';
+elBreakLabel.style.cursor = 'pointer';
