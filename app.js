@@ -792,7 +792,10 @@ function applyBlock(kind) {
   recordSession(kind === 'deep');
 
   if (hpRestante(state) === 0) {
-    alert(`¡Derrotaste a ${state.boss_name}! 🐉`);
+    showSystemNotification(
+      '¡Jefe derrotado! 🐉',
+      `¡Derrotaste a ${state.boss_name}!`
+    );
   }
   saveState(state);
   onAfterApply(kind, false);
@@ -834,6 +837,7 @@ function toggleMode() {
     stopElapsed = (state.session_focus_sec | 0);
     autoRegistered = state.auto_registered_focus || 'none';
     autoLastIdx = state.auto_last_idx_focus ?? null;
+    lastFocusNotificationTime = 0; // Reset notification tracker when starting focus
   } else {
     stopElapsed = (state.session_break_sec | 0);
   }
@@ -849,6 +853,7 @@ function toggleMode() {
 /* ---------- Auto-registro ---------- */
 let autoRegistered = state.auto_registered_focus || 'none'; // none | brief | deep
 let autoLastIdx = state.auto_last_idx_focus ?? null;
+let lastFocusNotificationTime = 0; // Track last 10-min notification
 
 function onTick() {
   stopElapsed += 1;
@@ -878,6 +883,16 @@ function onTick() {
   }
 
   if (stopMode === 'Enfoque') {
+    // Notificación cada 10 minutos de enfoque
+    const currentFocusMinutes = Math.floor(stopElapsed / 60);
+    if (currentFocusMinutes >= 10 && currentFocusMinutes % 10 === 0 && currentFocusMinutes !== lastFocusNotificationTime) {
+      lastFocusNotificationTime = currentFocusMinutes;
+      showSystemNotification(
+        '🎯 ¡Gran concentración!',
+        `¡Llevás ${currentFocusMinutes} minutos enfocados!`
+      );
+    }
+
     // upgrade a deep a los 25' (si venía de brief)
     if (stopElapsed >= 25 * 60 && autoRegistered !== 'deep') {
       if (autoRegistered === 'brief' && autoLastIdx != null) {
@@ -980,6 +995,20 @@ elBtnForget.addEventListener('click', async () => {
     '¿Seguro que querés olvidar los tiempos actuales? Se pondrán en cero.',
     () => {
       stopTimer();
+
+      // Calculate session summary before resetting
+      const focusMinutes = Math.floor(state.session_focus_sec / 60);
+      const ratio = DIFF_RATIO[state.difficulty] ?? 3;
+      const expectedBreakMinutes = Math.floor(state.session_focus_sec / ratio / 60);
+      const actualBreakMinutes = Math.floor(state.session_break_sec / 60);
+      const balanceMinutes = Math.floor(balanceSeconds(state) / 60);
+
+      // Show session summary notification
+      showSystemNotification(
+        '🏁 Sesión finalizada',
+        `Enfoque: ${focusMinutes} min\nDescanso esperado: ${expectedBreakMinutes} min\nDescanso usado: ${actualBreakMinutes} min\nBalance: ${balanceMinutes >= 0 ? '+' : ''}${balanceMinutes} min`
+      );
+
       state.total_focus_sec = 0;
       state.total_break_sec = 0;
       state.session_focus_sec = 0;
