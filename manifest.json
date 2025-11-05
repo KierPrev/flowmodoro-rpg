@@ -1,0 +1,30 @@
+{
+    "name": "Flowmodoro RPG",
+    "short_name": "Flowmodoro",
+    "description": "Pomodoro RPG con sistema de balance y jefes",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#007bff",
+    "orientation": "portrait-primary",
+    "scope": "/",
+    "icons": [
+        {
+            "src": "flowmodoro-rpg.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "flowmodoro-rpg.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "categories": [
+        "productivity",
+        "utilities"
+    ],
+    "lang": "es"
+}

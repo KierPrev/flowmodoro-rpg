@@ -125,25 +125,43 @@ function playNotificationSound() {
 }
 
 function showSystemNotification(title, message) {
-  // Notificación del sistema (si está disponible)
+  // Intentar notificación del sistema nativa primero
   if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification(title, {
-      body: message,
-      icon: 'flowmodoro-rpg.png'
-    });
+    try {
+      new Notification(title, {
+        body: message,
+        icon: 'flowmodoro-rpg.png',
+        tag: 'flowmodoro-notification', // Evita duplicados
+        requireInteraction: true,
+        silent: false
+      });
+    } catch (e) {
+      console.warn('Error creando notificación nativa:', e);
+      // Fallback al service worker
+      sendNotificationToSW(title, message);
+    }
   } else if ('Notification' in window && Notification.permission === 'default') {
     // Solicitar permiso si no se ha hecho antes
     Notification.requestPermission().then(permission => {
       if (permission === 'granted') {
         new Notification(title, {
           body: message,
-          icon: 'flowmodoro-rpg.png'
+          icon: 'flowmodoro-rpg.png',
+          tag: 'flowmodoro-notification',
+          requireInteraction: true,
+          silent: false
         });
+      } else {
+        // Si se deniega, usar service worker como fallback
+        sendNotificationToSW(title, message);
       }
     });
+  } else {
+    // Si no hay soporte nativo o permiso denegado, usar service worker
+    sendNotificationToSW(title, message);
   }
 
-  // Notificación visual en la página como fallback
+  // Notificación visual en la página como fallback adicional
   const notification = document.createElement('div');
   notification.className = 'break-notification';
   notification.innerHTML = `
@@ -236,6 +254,41 @@ function seedState() {
   return s;
 }
 function saveState(s) {
+  /* ============================
+      Service Worker Registration
+  =========================== */
+  function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then((registration) => {
+          console.log('Service Worker registrado con éxito:', registration.scope);
+
+          // Solicitar permiso para notificaciones si aún no se ha hecho
+          if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission().then((permission) => {
+              if (permission === 'granted') {
+                console.log('Permiso de notificaciones concedido');
+              }
+            });
+          }
+        })
+        .catch((error) => {
+          console.log('Error al registrar Service Worker:', error);
+        });
+    }
+  }
+
+  // Función para enviar notificaciones a través del service worker
+  function sendNotificationToSW(title, body, icon = 'flowmodoro-rpg.png') {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'NOTIFICATION_REQUEST',
+        title: title,
+        body: body,
+        icon: icon
+      });
+    }
+  }
   localStorage.setItem(APP_KEY, JSON.stringify(s));
 }
 
@@ -1332,6 +1385,8 @@ elBtnAlarm.addEventListener('click', (e) => {
   if (elAlarmPopover.classList.contains('show')) {
     hideAlarmPopover();
   } else {
+    // Registrar service worker al iniciar la app
+    registerServiceWorker();
     showAlarmPopover();
   }
 });
